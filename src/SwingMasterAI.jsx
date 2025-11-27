@@ -31,7 +31,7 @@ export default function SwingMasterAI() {
   const [caddieData, setCaddieData] = useState({ distance: '', wind: 'calm', lie: 'fairway' });
 
     // --- Subscription / Access State ---
-  const [isPro, setIsPro] = useState(false);      // later this will come from real billing/auth
+  const [isPro, setIsPro] = useState(true);      // later this will come from real billing/auth
   const [aiUsesToday, setAiUsesToday] = useState(0); // track how many AI calls free users have made
 
   const FREE_DAILY_AI_LIMIT = 1; // change this if you want more free uses
@@ -349,14 +349,37 @@ export default function SwingMasterAI() {
       {/* Centered app shell */}
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-slate-200 flex flex-col overflow-hidden">
         
-        <header className="bg-slate-900 text-white px-4 md:px-6 py-3 flex justify-between items-center shadow-md">
+             <header className="bg-slate-900 text-white px-4 md:px-6 py-3 flex justify-between items-center shadow-md">
+        <div className="flex items-center gap-2">
+          <Activity className="text-green-500" />
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+            SwingMaster <span className="text-green-500">AI</span>
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Pro status pill + Upgrade button */}
           <div className="flex items-center gap-2">
-            <Activity className="text-green-500" />
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-              SwingMaster <span className="text-green-500">AI</span>
-            </h1>
+            <span
+              className={`text-xs font-bold px-2 py-1 rounded-full ${
+                isPro ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-300'
+              }`}
+            >
+              {isPro ? 'PRO MEMBER' : 'FREE PLAN'}
+            </span>
+
+            <button
+              onClick={() => {
+                // later: replace with Stripe / Gumroad checkout link
+                alert('This is where your Pro checkout page will go.');
+              }}
+              className="text-xs font-semibold px-3 py-1 rounded-md border border-slate-600 hover:bg-slate-800 transition-colors"
+            >
+              Upgrade to Pro
+            </button>
           </div>
 
+          {/* Existing nav */}
           <nav className="flex gap-1 bg-slate-800 p-1 rounded-lg">
             {[
               { id: 'dashboard', icon: Trophy, label: 'Stats' },
@@ -378,7 +401,8 @@ export default function SwingMasterAI() {
               </button>
             ))}
           </nav>
-        </header>
+        </div>
+      </header>
 
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto bg-slate-50">
           {activeTab === 'dashboard' && renderDashboard()}
