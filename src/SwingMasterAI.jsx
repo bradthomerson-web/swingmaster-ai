@@ -30,6 +30,12 @@ export default function SwingMasterAI() {
   const [aiResponse, setAiResponse] = useState(null);
   const [caddieData, setCaddieData] = useState({ distance: '', wind: 'calm', lie: 'fairway' });
 
+    // --- Subscription / Access State ---
+  const [isPro, setIsPro] = useState(false);      // later this will come from real billing/auth
+  const [aiUsesToday, setAiUsesToday] = useState(0); // track how many AI calls free users have made
+
+  const FREE_DAILY_AI_LIMIT = 1; // change this if you want more free uses
+
   // --- Helpers ---
   const getAverages = () => {
     if (rounds.length === 0) return { score: '-', putts: '-', gir: '-', fairways: '-' };
@@ -339,32 +345,50 @@ export default function SwingMasterAI() {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-900">
-      <header className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-lg z-20">
-        <div className="flex items-center gap-2">
+    <div className="min-h-screen bg-slate-100 flex justify-center px-3 py-6 font-sans text-slate-900">
+      {/* Centered app shell */}
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl border border-slate-200 flex flex-col overflow-hidden">
+        
+        <header className="bg-slate-900 text-white px-4 md:px-6 py-3 flex justify-between items-center shadow-md">
+          <div className="flex items-center gap-2">
             <Activity className="text-green-500" />
-            <h1 className="text-xl font-bold tracking-tight">SwingMaster <span className="text-green-500">AI</span></h1>
-        </div>
-        <nav className="flex gap-1 bg-slate-800 p-1 rounded-lg">
-            {[
-                { id: 'dashboard', icon: Trophy, label: 'Stats' },
-                { id: 'rounds', icon: Calendar, label: 'Log' },
-                { id: 'profile', icon: User, label: 'Profile' },
-                { id: 'ai-hub', icon: Sparkles, label: 'AI Hub' },
-            ].map(tab => (
-                 <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-3 md:px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-700'}`}>
-                    <tab.icon size={16}/> <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-            ))}
-        </nav>
-      </header>
+            <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+              SwingMaster <span className="text-green-500">AI</span>
+            </h1>
+          </div>
 
-      <main className="flex-grow p-4 lg:p-6 overflow-y-auto">
-        {activeTab === 'dashboard' && renderDashboard()}
-        {activeTab === 'rounds' && renderRoundsInput()}
-        {activeTab === 'profile' && renderProfile()}
-        {activeTab === 'ai-hub' && renderAIHub()}
-      </main>
+          <nav className="flex gap-1 bg-slate-800 p-1 rounded-lg">
+            {[
+              { id: 'dashboard', icon: Trophy, label: 'Stats' },
+              { id: 'rounds', icon: Calendar, label: 'Log' },
+              { id: 'profile', icon: User, label: 'Profile' },
+              { id: 'ai-hub', icon: Sparkles, label: 'AI Hub' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 md:px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <tab.icon size={16} />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </header>
+
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto bg-slate-50">
+          {activeTab === 'dashboard' && renderDashboard()}
+          {activeTab === 'rounds' && renderRoundsInput()}
+          {activeTab === 'profile' && renderProfile()}
+          {activeTab === 'ai-hub' && renderAIHub()}
+        </main>
+      </div>
     </div>
   );
+}
+
 }
