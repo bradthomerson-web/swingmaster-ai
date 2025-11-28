@@ -1,10 +1,7 @@
+// src/App.jsx
 import React from 'react';
-import SwingMasterAI from './SwingMasterAI';
+import SwingMasterAI from './SwingMasterAI.jsx';
 
-function App() {
+export default function App() {
   return <SwingMasterAI />;
 }
-
-export default App;
-
-

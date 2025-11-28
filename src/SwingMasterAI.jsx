@@ -1,3 +1,23 @@
+// src/SwingMasterAI.jsx
+import React, { useState, useEffect } from 'react';
+import {
+  Activity,
+  MapPin,
+  Sparkles,
+  Share2,
+  Plus,
+  TrendingUp,
+  Trophy,
+  Calendar,
+  Target,
+  User,
+  Save,
+  Box,
+  AlertCircle,
+} from 'lucide-react';
+
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
 export default function SwingMasterAI() {
   // Which tab is active
   const [activeTab, setActiveTab] = useState('profile'); // start on profile
@@ -14,12 +34,6 @@ export default function SwingMasterAI() {
     weaknesses: '',
     equipment: '',
   });
-
-  // DEBUG — expose userProfile globally so we can inspect it
-useEffect(() => {
-  window.__SM_PROFILE = userProfile;
-  console.log("🔍 userProfile updated:", userProfile);
-}, [userProfile]);
 
   // --- Round entry form state ---
   const [newRound, setNewRound] = useState({
