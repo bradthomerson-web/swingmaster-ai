@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/test_4gM6oHfHv96HgTD0e0asg01';
 
 export default function SwingMasterAI() {
   // Which tab is active
@@ -56,19 +57,16 @@ export default function SwingMasterAI() {
   });
 
   // --- Free-tier / PRO Subscription State ---
-const FREE_DAILY_AI_LIMIT = 1;
-const [aiUsesToday, setAiUsesToday] = useState(0);
-const [lastUseDate, setLastUseDate] = useState(null);
-const [isPro, setIsPro] = useState(false); // default: free user
+  const FREE_DAILY_AI_LIMIT = 1;
+  const [aiUsesToday, setAiUsesToday] = useState(0);
+  const [lastUseDate, setLastUseDate] = useState(null);
+  const [isPro, setIsPro] = useState(false); // default: free user
 
-// 🔹 When user upgrades to PRO
-const handleUpgradeToPro = () => {
-  setIsPro(true);         // mark them as PRO
-  setAiUsesToday(0);      // reset daily usage
-  setLastUseDate(null);   // clear date so the counter starts fresh
-
-  alert('You are now a PRO member! (Mock upgrade – Stripe coming soon)');
-};
+  // 🔹 When user upgrades to PRO → just redirect to Stripe
+  const handleUpgradeToPro = () => {
+    console.log('➡️ Redirecting to Stripe checkout…');
+    window.location.href = STRIPE_PAYMENT_URL;
+  };
 
   // --- Load saved data from localStorage on first render ---
   useEffect(() => {
@@ -91,26 +89,24 @@ const handleUpgradeToPro = () => {
   }, []);
 
   // --- Load free-tier usage on startup ---
-useEffect(() => {
-  const today = new Date().toDateString();
+  useEffect(() => {
+    const today = new Date().toDateString();
 
-  const savedUses = localStorage.getItem('ai_uses_today');
-  const savedDate = localStorage.getItem('ai_last_use_date');
-  const savedPro = localStorage.getItem('ai_is_pro');
+    const savedUses = localStorage.getItem('ai_uses_today');
+    const savedDate = localStorage.getItem('ai_last_use_date');
+    const savedPro = localStorage.getItem('ai_is_pro');
 
-  if (savedDate !== today) {
-    // new day → reset free usage
-    setAiUsesToday(0);
-    setLastUseDate(today);
-    localStorage.setItem('ai_last_use_date', today);
-  } else {
-    setAiUsesToday(Number(savedUses || 0));
-    setLastUseDate(savedDate);
-  }
+    if (savedDate !== today) {
+      setAiUsesToday(0);
+      setLastUseDate(today);
+      localStorage.setItem('ai_last_use_date', today);
+    } else {
+      setAiUsesToday(Number(savedUses || 0));
+      setLastUseDate(savedDate);
+    }
 
-  // Restore PRO status
-  setIsPro(savedPro === "true");
-}, []);
+    setIsPro(savedPro === 'true');
+  }, []);
 
   // --- Persist rounds when they change ---
  useEffect(() => {
@@ -148,6 +144,27 @@ useEffect(() => {
 useEffect(() => {
   localStorage.setItem('ai_is_pro', isPro);
 }, [isPro]);
+
+// --- Detect Stripe return ( ?pro=1 ) and unlock PRO ---
+// useEffect(() => {
+//   try {
+//     const url = new URL(window.location.href);
+//     const proFlag = url.searchParams.get('pro');
+
+//     if (proFlag === '1') {
+//       setIsPro(true);
+//       setAiUsesToday(0);
+//       setLastUseDate(new Date().toDateString());
+//       console.log('✅ PRO unlocked from URL parameter');
+
+//       localStorage.setItem('ai_is_pro', "true");
+//       localStorage.setItem('ai_uses_today', "0");
+//       localStorage.setItem('ai_last_use_date', new Date().toDateString());
+//     }
+//   } catch (err) {
+//     console.error('Error reading PRO flag from URL:', err);
+//   }
+// }, []);
 
   // --- Helpers ---
   const getAverages = () => {
@@ -828,13 +845,13 @@ return (
 
           {/* Upgrade button only if NOT pro */}
           {!isPro && (
-            <button
-              onClick={handleUpgradeToPro}
-              className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500 text-slate-900 hover:bg-emerald-400 transition-colors shadow-sm"
-            >
-              Upgrade to Pro
-            </button>
-          )}
+  <button
+    onClick={handleUpgradeToPro}
+    className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500 text-slate-900 hover:bg-emerald-400 transition-colors shadow-sm"
+  >
+    Upgrade to Pro
+  </button>
+)}
         </div>
 
         {/* Nav tabs */}
