@@ -828,65 +828,72 @@ setAiUsesToday(prev => prev + 1);
 // --- Main layout & navigation ---
 return (
   <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-    <header className="bg-slate-900 text-white px-4 md:px-6 py-3 flex justify-between items-center shadow-lg">
-      {/* Left side: logo + title */}
-      <div className="flex items-center gap-2">
-        <Activity className="text-green-500" />
-        <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-          SwingMaster <span className="text-green-500">AI</span>
-        </h1>
-      </div>
+  <header className="bg-slate-900 text-white shadow-lg"> {/* Removed padding here, we'll put it inside the wrapper */}
+      
+      {/* 💥 NEW WRAPPER TO CENTER HEADER CONTENT 💥 */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex justify-between items-center">
 
-      {/* Right side: status pill + upgrade + nav */}
-      <div className="flex items-center gap-4">
-        <div className="hidden sm:flex items-center gap-2">
-          {/* Status pill */}
-          <span
-            className={`text-xs font-bold px-2 py-1 rounded-full ${
-              isPro
-                ? 'bg-amber-400 text-slate-900'       // PRO look
-                : 'bg-slate-700 text-slate-100'       // FREE look
-            }`}
-          >
-            {isPro
-              ? 'PRO MEMBER'
-              : `FREE • ${Math.max(FREE_DAILY_AI_LIMIT - aiUsesToday, 0)} AI left`}
-          </span>
-
-          {/* Upgrade button only if NOT pro */}
-          {!isPro && (
-  <button
-    onClick={handleUpgradeToPro}
-    className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500 text-slate-900 hover:bg-emerald-400 transition-colors shadow-sm"
-  >
-    Upgrade to Pro
-  </button>
-)}
+        {/* Left side: logo + title */}
+        <div className="flex items-center gap-2">
+          <Activity className="text-green-500" />
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+            SwingMaster <span className="text-green-500">AI</span>
+          </h1>
         </div>
 
-        {/* Nav tabs */}
-        <nav className="flex gap-1 bg-slate-800 p-1 rounded-lg">
-          {[
-            { id: 'dashboard', icon: Trophy, label: 'Stats' },
-            { id: 'rounds', icon: Calendar, label: 'Log' },
-            { id: 'profile', icon: User, label: 'Profile' },
-            { id: 'ai-hub', icon: Sparkles, label: 'AI Hub' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 md:px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${
-                activeTab === tab.id
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-700'
+        {/* Right side: status pill + upgrade + nav */}
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-2">
+            {/* Status pill */}
+            <span
+              className={`text-xs font-bold px-2 py-1 rounded-full ${
+                isPro
+                  ? 'bg-amber-400 text-slate-900'       // PRO look
+                  : 'bg-slate-700 text-slate-100'       // FREE look
               }`}
             >
-              <tab.icon size={16} />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          ))}
-        </nav>
+              {isPro
+                ? 'PRO MEMBER'
+                : `FREE • ${Math.max(FREE_DAILY_AI_LIMIT - aiUsesToday, 0)} AI left`}
+            </span>
+
+            {/* Upgrade button only if NOT pro */}
+            {!isPro && (
+    <button
+      onClick={handleUpgradeToPro}
+      className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500 text-slate-900 hover:bg-emerald-400 transition-colors shadow-sm"
+    >
+      Upgrade to Pro
+    </button>
+  )}
+          </div>
+
+          {/* Nav tabs */}
+          <nav className="flex gap-1 bg-slate-800 p-1 rounded-lg">
+            {[
+              { id: 'dashboard', icon: Trophy, label: 'Stats' },
+              { id: 'rounds', icon: Calendar, label: 'Log' },
+              { id: 'profile', icon: User, label: 'Profile' },
+              { id: 'ai-hub', icon: Sparkles, label: 'AI Hub' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-3 md:px-4 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <tab.icon size={16} />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
       </div>
+      {/* 💥 END OF NEW WRAPPER 💥 */}
     </header>
 
     <main className="flex-grow max-w-7xl mx-auto p-4 lg:p-6 overflow-y-auto">
