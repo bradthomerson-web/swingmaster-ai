@@ -19,6 +19,13 @@ import {
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/test_4gM6oHfHv96HgTD0e0asg01';
 
+// Inside export default function SwingMasterAI() { … }
+function handleUpgradeToPro() {
+    console.log('➡️ Redirecting to Stripe checkout…');
+    window.location.href = STRIPE_PAYMENT_URL;
+}
+
+
 export default function SwingMasterAI() {
   // Which tab is active
   const [activeTab, setActiveTab] = useState('profile'); // start on profile
@@ -146,25 +153,28 @@ useEffect(() => {
 }, [isPro]);
 
 // --- Detect Stripe return ( ?pro=1 ) and unlock PRO ---
-// useEffect(() => {
-//   try {
-//     const url = new URL(window.location.href);
-//     const proFlag = url.searchParams.get('pro');
+useEffect(() => {
+  try {
+    const url = new URL(window.location.href);
+    const proFlag = url.searchParams.get('pro');
 
-//     if (proFlag === '1') {
-//       setIsPro(true);
-//       setAiUsesToday(0);
-//       setLastUseDate(new Date().toDateString());
-//       console.log('✅ PRO unlocked from URL parameter');
+    if (proFlag === '1') {
+      setIsPro(true);
+      setAiUsesToday(0);
+      setLastUseDate(new Date().toDateString());
+      console.log('✅ PRO unlocked from URL parameter');
 
-//       localStorage.setItem('ai_is_pro', "true");
-//       localStorage.setItem('ai_uses_today', "0");
-//       localStorage.setItem('ai_last_use_date', new Date().toDateString());
-//     }
-//   } catch (err) {
-//     console.error('Error reading PRO flag from URL:', err);
-//   }
-// }, []);
+      localStorage.setItem('ai_is_pro', "true");
+      localStorage.setItem('ai_uses_today', "0");
+      localStorage.setItem('ai_last_use_date', new Date().toDateString());
+      
+      // OPTIONAL: Clean up the URL so a refresh doesn't re-trigger this
+      window.history.replaceState({}, document.title, url.pathname);
+    }
+  } catch (err) {
+    console.error('Error reading PRO flag from URL:', err);
+  }
+}, []);
 
   // --- Helpers ---
   const getAverages = () => {
