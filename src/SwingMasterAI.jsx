@@ -828,11 +828,11 @@ setAiUsesToday(prev => prev + 1);
 // --- Main layout & navigation ---
 return (
   <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-  <header className="bg-slate-900 text-white shadow-lg"> {/* Removed padding here, we'll put it inside the wrapper */}
-      
-      {/* 💥 NEW WRAPPER TO CENTER HEADER CONTENT 💥 */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex justify-between items-center">
 
+    {/* HEADER SECTION: Background stretches full width, content is centered */}
+    <header className="bg-slate-900 text-white shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex justify-between items-center">
+        
         {/* Left side: logo + title */}
         <div className="flex items-center gap-2">
           <Activity className="text-green-500" />
@@ -891,12 +891,11 @@ return (
             ))}
           </nav>
         </div>
-
       </div>
-      {/* 💥 END OF NEW WRAPPER 💥 */}
     </header>
 
-    <main className="flex-grow max-w-7xl mx-auto p-4 lg:p-6 overflow-y-auto">
+    {/* MAIN CONTENT SECTION: Centered and padded */}
+    <main className="max-w-7xl mx-auto p-4 lg:p-6">
       {activeTab === 'dashboard' && renderDashboard()}
       {activeTab === 'rounds' && renderRoundsInput()}
       {activeTab === 'profile' && renderProfile()}
