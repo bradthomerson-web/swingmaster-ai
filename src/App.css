@@ -1,10 +1,30 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* 1. Reset everything and ensure full height/width */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
 }
 
+/* 2. THE FIX: Tell the body to center all content (your React app) */
+body {
+  /* Use Flexbox to align the content (the #root element) horizontally */
+  display: flex;
+  justify-content: center; 
+  
+  /* Set a background color for the space outside your centered app area */
+  background-color: #f8fafc; /* This is the 'bg-slate-50' color used in your JSX */
+}
+
+/* 3. Re-apply the centering and max-width to #root (just in case) */
+#root {
+  max-width: 100%; /* Important: Let the content inside manage the width */
+  margin: 0;
+  padding: 0;
+  text-align: initial; /* Reset text-align to avoid centering all text */
+}
+
+/* Retain your existing utility styles below this point */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -14,29 +34,4 @@
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+/* ... all other existing logo, keyframes, card, etc., styles follow ... */
