@@ -889,7 +889,7 @@ return (
       </div>
     </header>
 
-    <main className="flex-grow p-4 lg:p-6 overflow-y-auto">
+    <main className="flex-grow max-w-7xl mx-auto p-4 lg:p-6 overflow-y-auto">
       {activeTab === 'dashboard' && renderDashboard()}
       {activeTab === 'rounds' && renderRoundsInput()}
       {activeTab === 'profile' && renderProfile()}
