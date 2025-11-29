@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/test_4gM6oHfHv96HgTD0e0asg01';
+const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00';
 
 // Inside export default function SwingMasterAI() { … }
 function handleUpgradeToPro() {
