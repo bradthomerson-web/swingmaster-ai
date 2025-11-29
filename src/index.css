@@ -24,8 +24,15 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  /* Keep display: flex to ensure min-height: 100vh works */
+  display: flex; 
+  
+  /* CHANGE 1: Use 'justify-content' for horizontal centering */
+  justify-content: center;
+  
+  /* CHANGE 2: Remove 'place-items: center;' (which centers vertically) */
+  /* We want content to start at the top, not be centered vertically */
+  
   min-width: 320px;
   min-height: 100vh;
 }
