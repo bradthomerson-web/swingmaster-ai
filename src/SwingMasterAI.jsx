@@ -828,7 +828,7 @@ setAiUsesToday(prev => prev + 1);
 // --- Main layout & navigation ---
 return (
   // 1. **THE FINAL FIX IS HERE:** max-w-7xl mx-auto centers the entire block
-  <div className="bg-slate-50 font-sans text-slate-900 max-w-7xl mx-auto min-h-screen"> 
+  <div className="bg-slate-50 font-sans text-slate-900 max-w-7xl mx-auto w-full min-h-screen">
 
     {/* HEADER: We only need the background color here now */}
     <header className="bg-slate-900 text-white shadow-lg">
