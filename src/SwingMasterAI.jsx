@@ -948,21 +948,28 @@ setAiUsesToday(prev => prev + 1);
                     <div className="space-y-3">
                       <div>
                         <label className="text-xs font-bold text-slate-500 uppercase">
-                          Club Name
-                        </label>
-                        <input
-                          type="text"
-                          value={newDistanceEntry.club}
-                          onChange={(e) =>
-                            setNewDistanceEntry({
-                              ...newDistanceEntry,
-                              club: e.target.value,
-                            })
-                          }
-                          className="w-full p-2 border rounded text-sm"
-                          placeholder="8 Iron"
-                        />
-                      </div>
+        Club Name
+    </label>
+    <select
+        // 📢 Check this line: We are setting the state correctly here
+        value={newDistanceEntry.club}
+        onChange={(e) =>
+            setNewDistanceEntry({
+                ...newDistanceEntry,
+                club: e.target.value,
+            })
+        }
+        className="w-full p-2 border rounded text-sm bg-white"
+    >
+        <option value="" disabled>-- Select Club --</option>
+        {/* 📢 Check this line: We map over the array defined in Step 1 */}
+        {STANDARD_CLUBS.map((club) => (
+            <option key={club} value={club}>
+                {club}
+            </option>
+        ))}
+    </select>
+</div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-xs font-bold text-slate-500 uppercase">
