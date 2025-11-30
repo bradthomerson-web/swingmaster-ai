@@ -260,6 +260,31 @@ useEffect(() => {
 
   const averages = getAverages();
 
+  const getClubRecommendation = (targetDistance) => {
+  const target = parseInt(targetDistance, 10);
+  if (target <= 0 || isNaN(target)) return null;
+
+  // Convert the distances object into an array and sort it Longest to Shortest
+  const distancesArray = Object.entries(summaryDistances);
+  distancesArray.sort(([, distA], [, distB]) => distB - distA); 
+
+  let bestClub = null;
+
+  for (const [club, distance] of distancesArray) {
+    if (distance >= target) {
+      bestClub = club;
+    } else {
+      break; // Found the shortest club that works, or all remaining are too short
+    }
+  }
+
+  if (bestClub) {
+    return { club: bestClub, distance: summaryDistances[bestClub] };
+  } else {
+    return { club: 'N/A', distance: 'Too Far!' };
+  }
+};
+  
   const handleSaveRound = () => {
     if (!newRound.score || !newRound.course) return;
     const round = { ...newRound, id: Date.now() };
@@ -381,30 +406,7 @@ setAiUsesToday(prev => prev + 1);
       caddieData.wind
     }, Lie: ${caddieData.lie}.
     Give me a club recommendation and specific strategy.`;
-   const getClubRecommendation = (targetDistance) => {
-  const target = parseInt(targetDistance, 10);
-  if (target <= 0 || isNaN(target)) return null;
-
-  // Convert the distances object into an array and sort it Longest to Shortest
-  const distancesArray = Object.entries(summaryDistances);
-  distancesArray.sort(([, distA], [, distB]) => distB - distA); 
-
-  let bestClub = null;
-
-  for (const [club, distance] of distancesArray) {
-    if (distance >= target) {
-      bestClub = club;
-    } else {
-      break; // Found the shortest club that works, or all remaining are too short
-    }
-  }
-
-  if (bestClub) {
-    return { club: bestClub, distance: summaryDistances[bestClub] };
-  } else {
-    return { club: 'N/A', distance: 'Too Far!' };
-  }
-};
+   
 
     // FREE TIER LIMIT CHECK
 if (!isPro && aiUsesToday >= FREE_DAILY_AI_LIMIT) {
