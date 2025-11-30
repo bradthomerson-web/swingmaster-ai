@@ -25,6 +25,23 @@ function handleUpgradeToPro() {
     window.location.href = STRIPE_PAYMENT_URL;
 }
 
+const STANDARD_CLUBS = [
+  'Driver',
+  '3 Wood',
+  '5 Wood',
+  '2 Iron',
+  '3 Iron',
+  '4 Iron',
+  '5 Iron',
+  '6 Iron',
+  '7 Iron',
+  '8 Iron',
+  '9 Iron',
+  'PW', // Pitching Wedge
+  'GW', // Gap Wedge
+  'SW', // Sand Wedge
+  'LW', // Lob Wedge
+];
 
 export default function SwingMasterAI() {
   // Which tab is active
