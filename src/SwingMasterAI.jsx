@@ -1139,7 +1139,7 @@ return (
     <header className="bg-slate-900 text-white shadow-lg">
       <div className="px-4 md:px-6 py-3 flex justify-between items-center">
         
-       // Left side: logo + title
+       
 <div className="flex items-center gap-2">
   {/* 📢 NEW LOGO IMPLEMENTATION 📢 */}
   <img 
