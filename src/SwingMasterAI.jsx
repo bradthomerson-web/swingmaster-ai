@@ -174,7 +174,6 @@ useEffect(() => {
   // --- Load free-tier usage on startup ---
   useEffect(() => {
     const today = new Date().toDateString();
-
     const savedUses = localStorage.getItem('ai_uses_today');
     const savedDate = localStorage.getItem('ai_last_use_date');
     const savedPro = localStorage.getItem('ai_is_pro');
