@@ -51,6 +51,8 @@ export default function SwingMasterAI() {
     total: '',
   });
 
+  const [summaryDistances, setSummaryDistances] = useState({});
+
   // --- Round entry form state ---
   const [newRound, setNewRound] = useState({
     date: '',
@@ -99,18 +101,39 @@ export default function SwingMasterAI() {
     }
   }, []); // Empty array runs only once
 
-  // --- Persist clubDistances when they change ---
-  useEffect(() => {
-    try {
-      console.log('💾 Saving club distances to localStorage...', clubDistances);
-      window.localStorage.setItem(
-        'swingmaster_club_distances',
-        JSON.stringify(clubDistances)
-      );
-    } catch (err) {
-      console.error('Error saving club distances to localStorage:', err);
+// --- Persist clubDistances when they change ---
+useEffect(() => {
+  try {
+    console.log('💾 Saving club distances to localStorage...', clubDistances);
+    window.localStorage.setItem(
+      'swingmaster_club_distances',
+      JSON.stringify(clubDistances)
+    );
+  } catch (err) {
+    console.error('Error saving club distances to localStorage:', err);
+  }
+}, [clubDistances]);
+
+// --- Calculate Summary Distances whenever clubDistances array changes ---
+useEffect(() => {
+  console.log('🔄 Recalculating summary distances...');
+  
+  // Find the highest recorded carry distance for each club (e.g., if you hit 7 Iron 150y, 148y, 155y, it picks 155)
+  const summaryMap = clubDistances.reduce((acc, entry) => {
+    const clubName = entry.club.trim(); 
+    const carry = Number(entry.carry); 
+
+    // Only keep the longest recorded carry for that club
+    if (carry > 0 && carry > (acc[clubName] || 0)) {
+      acc[clubName] = carry;
     }
-  }, [clubDistances]); // Runs whenever clubDistances changes
+    return acc;
+  }, {});
+
+  // Update the dedicated summary state
+  setSummaryDistances(summaryMap);
+  
+}, [clubDistances]); // 📢 Reruns every time you save a new distance entry
  
   useEffect(() => {
     try {
@@ -358,7 +381,31 @@ setAiUsesToday(prev => prev + 1);
       caddieData.wind
     }, Lie: ${caddieData.lie}.
     Give me a club recommendation and specific strategy.`;
-   
+   const getClubRecommendation = (targetDistance) => {
+  const target = parseInt(targetDistance, 10);
+  if (target <= 0 || isNaN(target)) return null;
+
+  // Convert the distances object into an array and sort it Longest to Shortest
+  const distancesArray = Object.entries(summaryDistances);
+  distancesArray.sort(([, distA], [, distB]) => distB - distA); 
+
+  let bestClub = null;
+
+  for (const [club, distance] of distancesArray) {
+    if (distance >= target) {
+      bestClub = club;
+    } else {
+      break; // Found the shortest club that works, or all remaining are too short
+    }
+  }
+
+  if (bestClub) {
+    return { club: bestClub, distance: summaryDistances[bestClub] };
+  } else {
+    return { club: 'N/A', distance: 'Too Far!' };
+  }
+};
+
     // FREE TIER LIMIT CHECK
 if (!isPro && aiUsesToday >= FREE_DAILY_AI_LIMIT) {
   alert("You've used your free AI session for today. Upgrade to PRO for unlimited access.");
@@ -806,12 +853,29 @@ setAiUsesToday(prev => prev + 1);
                   type="number"
                   value={caddieData.distance}
                   onChange={(e) =>
-                    setCaddieData({ ...caddieData, distance: e.target.value })
-                  }
+                    setCaddieData({ ...caddieData, distance: e.target.value }) }
                   className="w-full p-2 border rounded text-sm"
                   placeholder="150"
                 />
               </div>
+              <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100 text-center">
+      <p className="text-sm font-bold text-blue-700 uppercase mb-1">
+        Your Club Recommendation
+      </p>
+      
+      {getClubRecommendation(caddieData.distance) ? (
+        <>
+          <h3 className="text-3xl font-bold text-slate-900">
+            {getClubRecommendation(caddieData.distance).club}
+          </h3>
+          <p className="text-sm text-slate-600">
+            Carry: {getClubRecommendation(caddieData.distance).distance} Yds
+          </p>
+        </>
+      ) : (
+        <p className="text-sm text-slate-600">Enter distance to see club.</p>
+      )}
+    </div>
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase">
                   Wind
