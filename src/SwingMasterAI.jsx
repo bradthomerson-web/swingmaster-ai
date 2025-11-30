@@ -281,7 +281,27 @@ useEffect(() => {
   const target = parseInt(targetDistance, 10);
   if (target <= 0 || isNaN(target)) return null;
 
-const renderSummaryTable = () => {
+  // Convert the distances object into an array and sort it Longest to Shortest
+  const distancesArray = Object.entries(summaryDistances);
+  distancesArray.sort(([, distA], [, distB]) => distB - distA); 
+
+  let bestClub = null;
+
+  for (const [club, distance] of distancesArray) {
+    if (distance >= target) {
+      bestClub = club;
+    } else {
+      break; // Found the shortest club that works, or all remaining are too short
+    }
+  }
+
+  if (bestClub) {
+    return { club: bestClub, distance: summaryDistances[bestClub] };
+  } else {
+    return { club: 'N/A', distance: 'Too Far!' };
+  }
+};
+ const renderSummaryTable = () => {
     // Convert the summary object into an array of [ClubName, Distance] pairs
     const summaryArray = Object.entries(summaryDistances);
 
@@ -326,29 +346,7 @@ const renderSummaryTable = () => {
             {/* Optional: Add a small button or link here to view the full raw history if desired */}
         </div>
     );
-};
-
-  // Convert the distances object into an array and sort it Longest to Shortest
-  const distancesArray = Object.entries(summaryDistances);
-  distancesArray.sort(([, distA], [, distB]) => distB - distA); 
-
-  let bestClub = null;
-
-  for (const [club, distance] of distancesArray) {
-    if (distance >= target) {
-      bestClub = club;
-    } else {
-      break; // Found the shortest club that works, or all remaining are too short
-    }
-  }
-
-  if (bestClub) {
-    return { club: bestClub, distance: summaryDistances[bestClub] };
-  } else {
-    return { club: 'N/A', distance: 'Too Far!' };
-  }
-};
-  
+}; 
   const handleSaveRound = () => {
     if (!newRound.score || !newRound.course) return;
     const round = { ...newRound, id: Date.now() };
