@@ -281,6 +281,53 @@ useEffect(() => {
   const target = parseInt(targetDistance, 10);
   if (target <= 0 || isNaN(target)) return null;
 
+const renderSummaryTable = () => {
+    // Convert the summary object into an array of [ClubName, Distance] pairs
+    const summaryArray = Object.entries(summaryDistances);
+
+    if (summaryArray.length === 0) {
+        return (
+            <p className="p-4 text-center text-slate-500 text-sm">
+                Log a club distance to see your best carries here.
+            </p>
+        );
+    }
+    
+    // Sort the clubs by distance, longest to shortest, for a logical display
+    summaryArray.sort(([, distA], [, distB]) => distB - distA); 
+
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="p-4 border-b border-slate-100">
+                <h3 className="font-bold text-slate-800">
+                    Your Best Carry Distances (Avg/Max)
+                </h3>
+            </div>
+            <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500">
+                    <tr>
+                        <th className="p-3">Club</th>
+                        <th className="p-3">Best Carry</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {summaryArray.map(([club, distance]) => (
+                        <tr key={club} className="border-t border-slate-50">
+                            <td className="p-3 text-slate-900 font-semibold">
+                                {club}
+                            </td>
+                            <td className="p-3 font-bold text-blue-700">
+                                {distance} Yds
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            {/* Optional: Add a small button or link here to view the full raw history if desired */}
+        </div>
+    );
+};
+
   // Convert the distances object into an array and sort it Longest to Shortest
   const distancesArray = Object.entries(summaryDistances);
   distancesArray.sort(([, distA], [, distB]) => distB - distA); 
@@ -1015,43 +1062,7 @@ setAiUsesToday(prev => prev + 1);
                     </div>
                   </div>
 
-                  {/* Club Distance History Table */}
-                  {clubDistances.length > 0 && (
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                      <div className="p-4 border-b border-slate-100">
-                        <h3 className="font-bold text-slate-800">
-                          Recorded Distances
-                        </h3>
-                      </div>
-                      <table className="w-full text-sm text-left">
-                        <thead className="bg-slate-50 text-slate-500">
-                          <tr>
-                            <th className="p-3">Club</th>
-                            <th className="p-3">Carry</th>
-                            <th className="p-3">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {clubDistances.map((d) => (
-                            <tr
-                              key={d.id}
-                              className="border-t border-slate-50"
-                            >
-                              <td className="p-3 text-slate-900 font-semibold">
-                                {d.club}
-                              </td>
-                              <td className="p-3 text-slate-600">
-                                {d.carry} Yds
-                              </td>
-                              <td className="p-3 text-slate-600">
-                                {d.total} Yds
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                 {renderSummaryTable()}
                 </>
               )}
             </div>
