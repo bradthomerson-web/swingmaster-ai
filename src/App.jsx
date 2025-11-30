@@ -1,7 +1,9 @@
-// src/App.jsx
 import React from 'react';
-import SwingMasterAI from './SwingMasterAI.jsx';
+import SwingMasterAI from './SwingMasterAI'; // This file is what we will create next
+import './index.css';
 
-export default function App() {
-  return <SwingMasterAI />;
+function App() {
+    return <SwingMasterAI />;
 }
+
+export default App;

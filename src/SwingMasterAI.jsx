@@ -41,6 +41,14 @@ export default function SwingMasterAI() {
     strengths: '',
     weaknesses: '',
     equipment: '',
+ });
+
+ // --- Club Distance State (PRO Feature) ---
+  const [clubDistances, setClubDistances] = useState([]);
+  const [newDistanceEntry, setNewDistanceEntry] = useState({
+    club: '',
+    carry: '',
+    total: '',
   });
 
   // --- Round entry form state ---
@@ -76,6 +84,34 @@ export default function SwingMasterAI() {
   };
 
   // --- Load saved data from localStorage on first render ---
+ // --- Load Club Distances from localStorage on first render ---
+  useEffect(() => {
+    try {
+      const savedDistances = window.localStorage.getItem(
+        'swingmaster_club_distances'
+      );
+      if (savedDistances) {
+        console.log('  → found club distances:', savedDistances);
+        setClubDistances(JSON.parse(savedDistances));
+      }
+    } catch (err) {
+      console.error('Error loading club distances:', err);
+    }
+  }, []); // Empty array runs only once
+
+  // --- Persist clubDistances when they change ---
+  useEffect(() => {
+    try {
+      console.log('💾 Saving club distances to localStorage...', clubDistances);
+      window.localStorage.setItem(
+        'swingmaster_club_distances',
+        JSON.stringify(clubDistances)
+      );
+    } catch (err) {
+      console.error('Error saving club distances to localStorage:', err);
+    }
+  }, [clubDistances]); // Runs whenever clubDistances changes
+ 
   useEffect(() => {
     try {
       console.log('📂 Loading data from localStorage...');
@@ -214,6 +250,28 @@ useEffect(() => {
       gir: '',
     });
     setActiveTab('dashboard');
+  };
+
+const handleSaveDistance = () => {
+    if (!newDistanceEntry.club || !newDistanceEntry.carry) return;
+
+    // Create a new entry object
+    const entry = {
+      ...newDistanceEntry,
+      id: Date.now(), // Unique ID
+      carry: Number(newDistanceEntry.carry), // Ensure numbers are stored as numbers
+      total: Number(newDistanceEntry.total),
+    };
+
+    // Use the functional state update to safely add the new entry
+    setClubDistances((prevDistances) => [entry, ...prevDistances]);
+
+    // Clear the form
+    setNewDistanceEntry({
+      club: '',
+      carry: '',
+      total: '',
+    });
   };
 
   // --- API call helper ---
