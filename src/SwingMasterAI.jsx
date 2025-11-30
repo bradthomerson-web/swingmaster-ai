@@ -1,4 +1,5 @@
 // src/SwingMasterAI.jsx
+import logoImage from './assets/Swingmaster_logo.jpg';
 import React, { useState, useEffect } from 'react';
 import {
   Activity,
@@ -1138,13 +1139,18 @@ return (
     <header className="bg-slate-900 text-white shadow-lg">
       <div className="px-4 md:px-6 py-3 flex justify-between items-center">
         
-        {/* Left side: logo + title */}
-        <div className="flex items-center gap-2">
-          <Activity className="text-green-500" />
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-            SwingMaster <span className="text-green-500">AI</span>
-          </h1>
-        </div>
+       // Left side: logo + title
+<div className="flex items-center gap-2">
+  {/* 📢 NEW LOGO IMPLEMENTATION 📢 */}
+  <img 
+    src={logoImage} 
+    alt="SwingMaster AI Logo" 
+    className="h-8 w-auto" // Adjust h-8 (height) as needed
+  />
+  <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+    SwingMaster <span className="text-green-500">AI</span>
+  </h1>
+</div>
 
         {/* Right side: status pill + upgrade + nav */}
         <div className="flex items-center gap-4">
