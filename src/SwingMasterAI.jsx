@@ -741,7 +741,18 @@ setAiUsesToday(prev => prev + 1);
                   : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Caddie
+             Caddie
+            </button>
+            {/* 🎯 NEW BUTTON ADDED HERE 🎯 */}
+            <button
+              onClick={() => setAiTool('distances')}
+              className={`flex-1 py-2 text-xs font-bold rounded uppercase transition-all ${
+                aiTool === 'distances'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Distances
             </button>
           </div>
 
@@ -824,6 +835,135 @@ setAiUsesToday(prev => prev + 1);
               >
                 {loadingAI ? 'Thinking...' : 'Get Advice'}
               </button>
+            </div>
+          )}
+          {/* 🎯 NEW: Distances Input Form (PRO Feature) 🎯 */}
+          {aiTool === 'distances' && (
+            <div className="space-y-4">
+              {!isPro ? (
+                <div className="bg-amber-100 border border-amber-300 p-4 rounded-lg text-center">
+                  <h3 className="font-bold text-lg text-amber-800 mb-2">
+                    PRO Feature Unlocked!
+                  </h3>
+                  <p className="text-sm text-amber-700 mb-4">
+                    Track your club distances over time to get laser-focused AI
+                    feedback.
+                  </p>
+                  <button
+                    onClick={handleUpgradeToPro}
+                    className="w-full bg-amber-500 text-white py-2 rounded-lg font-bold hover:bg-amber-600 transition-colors"
+                  >
+                    Upgrade to PRO Now
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <h3 className="font-bold text-slate-800 mb-3 text-lg">
+                      Log a Club Shot
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase">
+                          Club Name
+                        </label>
+                        <input
+                          type="text"
+                          value={newDistanceEntry.club}
+                          onChange={(e) =>
+                            setNewDistanceEntry({
+                              ...newDistanceEntry,
+                              club: e.target.value,
+                            })
+                          }
+                          className="w-full p-2 border rounded text-sm"
+                          placeholder="8 Iron"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase">
+                            Carry (Yds)
+                          </label>
+                          <input
+                            type="number"
+                            value={newDistanceEntry.carry}
+                            onChange={(e) =>
+                              setNewDistanceEntry({
+                                ...newDistanceEntry,
+                                carry: e.target.value,
+                              })
+                            }
+                            className="w-full p-2 border rounded text-sm text-center"
+                            placeholder="150"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 uppercase">
+                            Total (Yds)
+                          </label>
+                          <input
+                            type="number"
+                            value={newDistanceEntry.total}
+                            onChange={(e) =>
+                              setNewDistanceEntry({
+                                ...newDistanceEntry,
+                                total: e.target.value,
+                              })
+                            }
+                            className="w-full p-2 border rounded text-sm text-center"
+                            placeholder="165"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleSaveDistance}
+                        className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700 flex justify-center items-center gap-2 transition-colors"
+                      >
+                        <Plus size={18} /> Add Distance
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Club Distance History Table */}
+                  {clubDistances.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                      <div className="p-4 border-b border-slate-100">
+                        <h3 className="font-bold text-slate-800">
+                          Recorded Distances
+                        </h3>
+                      </div>
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-slate-500">
+                          <tr>
+                            <th className="p-3">Club</th>
+                            <th className="p-3">Carry</th>
+                            <th className="p-3">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {clubDistances.map((d) => (
+                            <tr
+                              key={d.id}
+                              className="border-t border-slate-50"
+                            >
+                              <td className="p-3 text-slate-900 font-semibold">
+                                {d.club}
+                              </td>
+                              <td className="p-3 text-slate-600">
+                                {d.carry} Yds
+                              </td>
+                              <td className="p-3 text-slate-600">
+                                {d.total} Yds
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
