@@ -28,6 +28,17 @@ const EmergencyTips = ({ isProUser }) => {
     // 1. Get the Key
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
+// --- PASTE THIS BLOCK HERE ---
+    console.log("Checking available models...");
+    try {
+        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const listData = await listResponse.json();
+        console.log("📜 MY ALLOWED MODELS:", listData); // <--- LOOK FOR THIS IN CONSOLE
+    } catch (e) {
+        console.error("List failed:", e);
+    }
+    // -----------------------------
+
     // Debugging: Let's check if the key is actually there
     console.log("Using API Key:", apiKey ? "Found key ending in..." + apiKey.slice(-4) : "MISSING!");
 
