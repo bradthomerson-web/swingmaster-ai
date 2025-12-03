@@ -5,7 +5,7 @@ import EmergencyTips from './EmergencyTips'; // Make sure this matches your file
 
 function App() {
     // We set this to 'true' so you can see the feature immediately!
-    const isPro = false;
+    const isPro = true;
 
     return (
         <div>
