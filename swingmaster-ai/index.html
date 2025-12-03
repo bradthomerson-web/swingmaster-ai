@@ -67,7 +67,6 @@
         .icon { font-size: 28px; margin-bottom: 10px; display: block; }
         .label { font-weight: 600; color: #333; font-size: 15px; }
 
-        /* Navigation Bar */
         .nav-bar {
             background-color: white;
             padding: 15px 0;
@@ -83,13 +82,13 @@
         .nav-item { color: #999; font-size: 28px; cursor: pointer; padding: 10px; }
         .nav-item.active { color: #008060; }
 
-        /* --- POPUP FORM STYLES --- */
+        /* POPUP FORM STYLES */
         #roundModal {
-            display: none; /* Hidden by default */
+            display: none;
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.5); /* Dimmed background */
+            background-color: rgba(0,0,0,0.5);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -120,7 +119,7 @@
             margin-bottom: 15px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            box-sizing: border-box; /* Fixes padding issues */
+            box-sizing: border-box; 
         }
 
         .save-btn {
@@ -146,12 +145,12 @@
 
         <div class="content">
             <div class="main-card" onclick="alert('Generate Plan Clicked!')">
-                <h2>Generate Today's Plan</h2>
-                <p>AI-driven routine based on your recent stats.</p>
+                <h2 id="main-title">Generate Today's Plan</h2>
+                <p id="main-desc">AI-driven routine based on your recent stats.</p>
             </div>
 
             <div class="grid-container">
-                <div class="small-card" onclick="alert('Trends Clicked!')">
+                <div class="small-card" onclick="showTrends()">
                     <span class="icon">📈</span>
                     <span class="label">My Trends</span>
                 </div>
@@ -173,9 +172,9 @@
         </div>
 
         <div class="nav-bar">
-            <div class="nav-item active" onclick="alert('Home Clicked')">🏠</div>
-            <div class="nav-item" onclick="alert('Stats Clicked')">📊</div>
-            <div class="nav-item" onclick="alert('Profile Clicked')">👤</div>
+            <div class="nav-item active" onclick="alert('Home')">🏠</div>
+            <div class="nav-item" onclick="alert('Stats')">📊</div>
+            <div class="nav-item" onclick="alert('Profile')">👤</div>
         </div>
     </div>
 
@@ -187,33 +186,54 @@
             </div>
             
             <label>Total Score</label>
-            <input type="number" placeholder="82">
-
-            <label>Putts</label>
-            <input type="number" placeholder="30">
-
-            <label>Fairways</label>
-            <input type="number" placeholder="8">
+            <input type="number" id="scoreInput" placeholder="82">
 
             <button class="save-btn" onclick="saveData()">Save Round</button>
         </div>
     </div>
 
     <script>
-        // Function to SHOW the form
+        // 1. CREATE MEMORY: An empty list to hold scores
+        let scoreHistory = [];
+
         function openForm() {
             document.getElementById('roundModal').style.display = 'flex';
         }
 
-        // Function to HIDE the form
         function closeForm() {
             document.getElementById('roundModal').style.display = 'none';
         }
 
-        // Function to SAVE (simulate)
+        // 2. SAVE FUNCTION
         function saveData() {
-            document.getElementById('roundModal').style.display = 'none';
-            alert("Round Saved Successfully!");
+            // Get the text from the box
+            let newScore = document.getElementById('scoreInput').value;
+            
+            // If the box is empty, stop here
+            if (newScore === "") {
+                alert("Please enter a number!");
+                return;
+            }
+
+            // Add the new score to our list
+            scoreHistory.push(newScore);
+
+            // Close form
+            closeForm();
+            
+            // Clear the input box for next time
+            document.getElementById('scoreInput').value = "";
+
+            alert("Score saved! You now have " + scoreHistory.length + " rounds logged.");
+        }
+
+        // 3. TRENDS FUNCTION (Calculate Average)
+        function showTrends() {
+            if (scoreHistory.length === 0) {
+                alert("No rounds played yet. Go input a round!");
+            } else {
+                alert("Your Score History: " + scoreHistory);
+            }
         }
     </script>
 
