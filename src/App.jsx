@@ -1,9 +1,10 @@
 import React from 'react';
-import SwingMasterAI from './SwingMasterAI'; // This file is what we will create next
+import SwingmasterAi from './SwingmasterAi'; // match actual filename casing
 import './index.css';
+import EmergencyTips from './emergencyTips';
 
 function App() {
-    return <SwingMasterAI />;
+    return <SwingmasterAi />;
 }
 
 export default App;
