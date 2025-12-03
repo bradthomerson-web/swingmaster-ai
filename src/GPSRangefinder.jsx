@@ -1,39 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
-// 1. Accept the 'isProUser' prop here
 const GPSRangefinder = ({ isProUser }) => {
+  // 1. ALWAYS CALL HOOKS FIRST (Before any return statements)
   const [distance, setDistance] = useState(null);
   const [error, setError] = useState(null);
   const [gpsReady, setGpsReady] = useState(false);
 
-  // ⛳ TARGET: Example Green coordinates (Update this for real testing!)
+  // ⛳ TARGET: Example Green coordinates
   const targetLat = 33.5021; 
   const targetLng = -82.0226;
 
-  // 🔒 LOCKED STATE
-  if (!isProUser) {
-    return (
-      <div style={{ 
-        marginTop: '20px', 
-        padding: '20px', 
-        background: '#f9f9f9', 
-        border: '1px solid #ccc',
-        borderRadius: '10px', 
-        textAlign: 'center'
-      }}>
-        <h3 style={{ margin: 0, color: '#333' }}>📍 GPS Rangefinder</h3>
-        <p style={{ color: '#666', fontSize: '14px', margin: '10px 0' }}>
-          Get precise yardage to the pin on every hole.
-        </p>
-        <button style={{ backgroundColor: '#FFD700', border: 'none', padding: '10px 20px', cursor: 'pointer', fontWeight: 'bold', borderRadius: '5px' }}>
-          Upgrade to Pro 🔒
-        </button>
-      </div>
-    );
-  }
-
-  // --- EVERYTHING BELOW IS THE UNLOCKED PRO FEATURE ---
-
+  // 2. DEFINE FUNCTIONS
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371e3; 
     const toRad = x => x * Math.PI / 180;
@@ -64,15 +41,41 @@ const GPSRangefinder = ({ isProUser }) => {
     );
   };
 
+  // 3. CALL EFFECT (But only run logic inside if Pro)
   useEffect(() => {
-    // Only run the GPS if the user is actually allowed to see it!
+    let interval;
     if (isProUser) {
         updateLocation();
-        const interval = setInterval(updateLocation, 10000);
-        return () => clearInterval(interval);
+        interval = setInterval(updateLocation, 10000);
+    }
+    return () => {
+        if(interval) clearInterval(interval);
     }
   }, [isProUser]);
 
+  // 4. NOW WE CAN DO THE CONDITIONAL RETURN (Lock Screen)
+  if (!isProUser) {
+    return (
+      <div style={{ 
+        marginTop: '20px', 
+        padding: '20px', 
+        background: '#f9f9f9', 
+        border: '1px solid #ccc',
+        borderRadius: '10px', 
+        textAlign: 'center'
+      }}>
+        <h3 style={{ margin: 0, color: '#333' }}>📍 GPS Rangefinder</h3>
+        <p style={{ color: '#666', fontSize: '14px', margin: '10px 0' }}>
+          Get precise yardage to the pin on every hole.
+        </p>
+        <button style={{ backgroundColor: '#FFD700', border: 'none', padding: '10px 20px', cursor: 'pointer', fontWeight: 'bold', borderRadius: '5px' }}>
+          Upgrade to Pro 🔒
+        </button>
+      </div>
+    );
+  }
+
+  // 5. UNLOCKED VIEW
   return (
     <div style={{ 
       marginTop: '20px', 
