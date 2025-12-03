@@ -18,15 +18,15 @@ const EmergencyTips = ({ isProUser }) => {
     );
   }
 
-  // 🧠 THE REAL AI FUNCTION
+  // 🧠 THE REAL AI FUNCTION (Fixed)
   const handleAskAI = async () => {
     if (!input) return;
     
     setIsLoading(true);
     setResponse(null);
 
-    // 1. Get the Key from your .env file
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    // 1. Get the Key (Make sure this matches your .env file!)
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
     if (!apiKey) {
         setResponse("Error: Missing API Key. Check your .env file!");
@@ -35,9 +35,9 @@ const EmergencyTips = ({ isProUser }) => {
     }
 
     try {
-      // 2. Call the Gemini API
-      const apiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      // 2. We switched to 'gemini-pro' which is more stable for general use
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -49,15 +49,23 @@ const EmergencyTips = ({ isProUser }) => {
         }
       );
 
-      const data = await apiResponse.json();
+      const data = await response.json();
+
+      // 3. SAFETY CHECK: Did we get an error back?
+      if (!response.ok) {
+        throw new Error(data.error?.message || "API Error");
+      }
       
-      // 3. Extract the answer
-      const aiText = data.candidates[0].content.parts[0].text;
-      setResponse(aiText);
+      // 4. Extract the answer safely
+      if (data.candidates && data.candidates.length > 0) {
+        setResponse(data.candidates[0].content.parts[0].text);
+      } else {
+        setResponse("Coach is thinking, but didn't give an answer. Try rephrasing.");
+      }
 
     } catch (error) {
       console.error("AI Error:", error);
-      setResponse("Sorry, the Coach is offline right now. Try again!");
+      setResponse(`Sorry, the Coach is offline. (${error.message})`);
     }
 
     setIsLoading(false);
