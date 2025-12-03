@@ -67,6 +67,7 @@
         .icon { font-size: 28px; margin-bottom: 10px; display: block; }
         .label { font-weight: 600; color: #333; font-size: 15px; }
 
+        /* Navigation Bar */
         .nav-bar {
             background-color: white;
             padding: 15px 0;
@@ -81,6 +82,57 @@
         }
         .nav-item { color: #999; font-size: 28px; cursor: pointer; padding: 10px; }
         .nav-item.active { color: #008060; }
+
+        /* --- POPUP FORM STYLES --- */
+        #roundModal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); /* Dimmed background */
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 350px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .close-x { cursor: pointer; color: #999; }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box; /* Fixes padding issues */
+        }
+
+        .save-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #008060;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
 
     </style>
 </head>
@@ -104,7 +156,7 @@
                     <span class="label">My Trends</span>
                 </div>
                 
-                <div class="small-card" onclick="alert('Input Round Clicked!')">
+                <div class="small-card" onclick="openForm()">
                     <span class="icon">⛳</span>
                     <span class="label">Input Round</span>
                 </div>
@@ -121,11 +173,49 @@
         </div>
 
         <div class="nav-bar">
-            <div class="nav-item active">🏠</div>
-            <div class="nav-item">📊</div>
-            <div class="nav-item">👤</div>
+            <div class="nav-item active" onclick="alert('Home Clicked')">🏠</div>
+            <div class="nav-item" onclick="alert('Stats Clicked')">📊</div>
+            <div class="nav-item" onclick="alert('Profile Clicked')">👤</div>
         </div>
     </div>
+
+    <div id="roundModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>Log New Round</span>
+                <span class="close-x" onclick="closeForm()">X</span>
+            </div>
+            
+            <label>Total Score</label>
+            <input type="number" placeholder="82">
+
+            <label>Putts</label>
+            <input type="number" placeholder="30">
+
+            <label>Fairways</label>
+            <input type="number" placeholder="8">
+
+            <button class="save-btn" onclick="saveData()">Save Round</button>
+        </div>
+    </div>
+
+    <script>
+        // Function to SHOW the form
+        function openForm() {
+            document.getElementById('roundModal').style.display = 'flex';
+        }
+
+        // Function to HIDE the form
+        function closeForm() {
+            document.getElementById('roundModal').style.display = 'none';
+        }
+
+        // Function to SAVE (simulate)
+        function saveData() {
+            document.getElementById('roundModal').style.display = 'none';
+            alert("Round Saved Successfully!");
+        }
+    </script>
 
 </body>
 </html>
