@@ -28,7 +28,7 @@ function App() {
             <div style={{ maxWidth: '600px', margin: '0 auto', padding: '0 20px' }}>
                 
                 {/* 2. ADD THE GPS HERE! 📍 */}
-                <GPSRangefinder />
+                <GPSRangefinder isProUser={isPro} />
 
                 {/* spacer */}
                 <div style={{ height: '20px' }}></div>

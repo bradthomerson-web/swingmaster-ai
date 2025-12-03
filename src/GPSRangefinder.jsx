@@ -1,66 +1,77 @@
 import React, { useState, useEffect } from 'react';
 
-const GPSRangefinder = () => {
+// 1. Accept the 'isProUser' prop here
+const GPSRangefinder = ({ isProUser }) => {
   const [distance, setDistance] = useState(null);
   const [error, setError] = useState(null);
   const [gpsReady, setGpsReady] = useState(false);
 
-  // ⛳ TARGET: The Green (Currently set to Augusta National Hole 12)
-  // CHANGE THESE to your house/park to test it!
+  // ⛳ TARGET: Example Green coordinates (Update this for real testing!)
   const targetLat = 33.5021; 
   const targetLng = -82.0226;
 
-  // 🧮 THE MATH: Calculates yards between two coordinates
+  // 🔒 LOCKED STATE
+  if (!isProUser) {
+    return (
+      <div style={{ 
+        marginTop: '20px', 
+        padding: '20px', 
+        background: '#f9f9f9', 
+        border: '1px solid #ccc',
+        borderRadius: '10px', 
+        textAlign: 'center'
+      }}>
+        <h3 style={{ margin: 0, color: '#333' }}>📍 GPS Rangefinder</h3>
+        <p style={{ color: '#666', fontSize: '14px', margin: '10px 0' }}>
+          Get precise yardage to the pin on every hole.
+        </p>
+        <button style={{ backgroundColor: '#FFD700', border: 'none', padding: '10px 20px', cursor: 'pointer', fontWeight: 'bold', borderRadius: '5px' }}>
+          Upgrade to Pro 🔒
+        </button>
+      </div>
+    );
+  }
+
+  // --- EVERYTHING BELOW IS THE UNLOCKED PRO FEATURE ---
+
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371e3; // Earth radius in meters
+    const R = 6371e3; 
     const toRad = x => x * Math.PI / 180;
-    
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
               Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
               Math.sin(dLon/2) * Math.sin(dLon/2);
-    
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distanceMeters = R * c;
-    
-    // Convert meters to Yards (1 meter = 1.09361 yards)
-    return Math.round(distanceMeters * 1.09361);
+    return Math.round(R * c * 1.09361);
   };
 
-  // 📍 GET LOCATION FUNCTION
   const updateLocation = () => {
     if (!navigator.geolocation) {
-      setError("GPS not supported on this device");
+      setError("GPS not supported");
       return;
     }
-
     setGpsReady(false);
-    
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const userLat = position.coords.latitude;
-        const userLng = position.coords.longitude;
-        
-        const yards = calculateDistance(userLat, userLng, targetLat, targetLng);
-        setDistance(yards);
+        const d = calculateDistance(position.coords.latitude, position.coords.longitude, targetLat, targetLng);
+        setDistance(d);
         setGpsReady(true);
         setError(null);
       },
-      (err) => {
-        setError("Please enable GPS permissions.");
-        console.error(err);
-      },
-      { enableHighAccuracy: true } // Important for golf precision!
+      (err) => { setError("Enable GPS permissions"); console.error(err); },
+      { enableHighAccuracy: true }
     );
   };
 
-  // Auto-update every 10 seconds
   useEffect(() => {
-    updateLocation();
-    const interval = setInterval(updateLocation, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    // Only run the GPS if the user is actually allowed to see it!
+    if (isProUser) {
+        updateLocation();
+        const interval = setInterval(updateLocation, 10000);
+        return () => clearInterval(interval);
+    }
+  }, [isProUser]);
 
   return (
     <div style={{ 
@@ -71,7 +82,8 @@ const GPSRangefinder = () => {
       borderRadius: '10px', 
       textAlign: 'center',
       fontFamily: 'monospace',
-      border: '4px solid #444'
+      border: '4px solid #444',
+      boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
     }}>
       <h3 style={{ margin: 0, color: '#fff', fontSize: '1.2rem' }}>📍 RANGEFINDER</h3>
       
@@ -79,7 +91,7 @@ const GPSRangefinder = () => {
         <p style={{ color: 'red' }}>{error}</p>
       ) : (
         <div style={{ fontSize: '3rem', fontWeight: 'bold', margin: '10px 0' }}>
-          {distance !== null ? distance : "---"} <span style={{fontSize: '1rem'}}>YDS</span>
+          {distance !== null ? distance : "--"} <span style={{fontSize: '1rem'}}>YDS</span>
         </div>
       )}
 
