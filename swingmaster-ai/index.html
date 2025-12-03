@@ -9,63 +9,62 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f4f9;
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .phone-container {
-            width: 375px;
-            height: 812px;
-            background-color: #ffffff;
-            border-radius: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
+            padding: 0;
+            /* This ensures the footer stays at the bottom */
             display: flex;
             flex-direction: column;
-            border: 8px solid #333;
+            min-height: 100vh; 
+        }
+
+        /* This container centers the content on large screens 
+           but lets it fill the screen on phones */
+        .app-container {
+            width: 100%;
+            max-width: 600px; /* Keeps it readable on desktop */
+            margin: 0 auto;   /* Centers it horizontally */
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            flex: 1; /* Pushes footer down */
+            box-shadow: 0 0 20px rgba(0,0,0,0.05); /* Subtle shadow on sides */
         }
 
         /* Header Section */
         .header {
-            background-color: #008060; /* Shopify-ish Green */
+            background-color: #008060;
             color: white;
-            padding: 30px 20px;
+            padding: 40px 20px 30px 20px; /* Taller padding for modern look */
             text-align: center;
-            border-bottom-left-radius: 20px;
-            border-bottom-right-radius: 20px;
         }
 
         .logo {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: bold;
             letter-spacing: 1px;
             margin-bottom: 5px;
         }
 
         .subtitle {
-            font-size: 14px;
+            font-size: 16px;
             opacity: 0.9;
         }
 
         /* Main Content */
         .content {
-            flex: 1;
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 20px;
         }
 
         /* The Main 'Action' Card */
         .main-card {
             background: linear-gradient(135deg, #008060, #00a67d);
             color: white;
-            padding: 25px;
-            border-radius: 20px;
+            padding: 40px 30px; /* Bigger touch target */
+            border-radius: 12px;
             text-align: center;
-            box-shadow: 0 10px 20px rgba(0,128,96, 0.3);
+            box-shadow: 0 10px 20px rgba(0,128,96, 0.2);
             cursor: pointer;
             transition: transform 0.2s;
         }
@@ -76,13 +75,13 @@
 
         .main-card h2 {
             margin: 0 0 10px 0;
-            font-size: 22px;
+            font-size: 24px;
         }
 
         .main-card p {
             margin: 0;
-            font-size: 14px;
-            opacity: 0.9;
+            font-size: 16px;
+            opacity: 0.95;
         }
 
         /* Grid for secondary options */
@@ -95,12 +94,12 @@
         .small-card {
             background-color: white;
             border: 1px solid #eee;
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: 12px;
+            padding: 25px 10px;
             text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: border-color 0.2s;
         }
 
         .small-card:hover {
@@ -108,7 +107,7 @@
         }
 
         .icon {
-            font-size: 24px;
+            font-size: 28px;
             margin-bottom: 10px;
             display: block;
         }
@@ -116,22 +115,29 @@
         .label {
             font-weight: 600;
             color: #333;
-            font-size: 14px;
+            font-size: 15px;
         }
 
-        /* Navigation Bar */
+        /* Navigation Bar - Sticky at bottom */
         .nav-bar {
             background-color: white;
-            padding: 20px;
+            padding: 15px 0;
             border-top: 1px solid #eee;
             display: flex;
             justify-content: space-around;
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+            max-width: 600px; /* Match app container */
+            margin: 0 auto; /* Center nav on desktop */
+            z-index: 100;
         }
 
         .nav-item {
             color: #999;
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
+            padding: 10px;
         }
 
         .nav-item.active {
@@ -142,7 +148,7 @@
 </head>
 <body>
 
-    <div class="phone-container">
+    <div class="app-container">
         
         <div class="header">
             <div class="logo">SwingMasterAI</div>
@@ -151,25 +157,25 @@
 
         <div class="content">
             
-            <div class="main-card">
+            <div class="main-card" id="btn-generate">
                 <h2>Generate Today's Plan</h2>
                 <p>AI-driven routine based on your recent stats.</p>
             </div>
 
             <div class="grid-container">
-                <div class="small-card">
+                <div class="small-card" id="btn-trends">
                     <span class="icon">📈</span>
                     <span class="label">My Trends</span>
                 </div>
-                <div class="small-card">
+                <div class="small-card" id="btn-input">
                     <span class="icon">⛳</span>
                     <span class="label">Input Round</span>
                 </div>
-                <div class="small-card">
+                <div class="small-card" id="btn-goals">
                     <span class="icon">🏆</span>
                     <span class="label">Goals</span>
                 </div>
-                <div class="small-card">
+                <div class="small-card" id="btn-settings">
                     <span class="icon">⚙️</span>
                     <span class="label">Settings</span>
                 </div>
@@ -178,9 +184,32 @@
         </div>
 
         <div class="nav-bar">
-            <div class="nav-item active">🏠</div> <div class="nav-item">📊</div> <div class="nav-item">👤</div> </div>
+            <div class="nav-item active">🏠</div>
+            <div class="nav-item">📊</div>
+            <div class="nav-item">👤</div>
+        </div>
 
     </div>
 
+    <script>
+        // 1. Select the buttons
+        const generateBtn = document.getElementById('btn-generate');
+        const trendsBtn = document.getElementById('btn-trends');
+        const inputBtn = document.getElementById('btn-input');
+
+        // 2. Add instructions
+        generateBtn.addEventListener('click', function() {
+            alert("This will generate your AI practice plan!");
+        });
+
+        trendsBtn.addEventListener('click', function() {
+            alert("This will show your putting and driving graphs.");
+        });
+
+        inputBtn.addEventListener('click', function() {
+            alert("This will open the form to enter your round score.");
+        });
+    </script>
+
 </body>
-</html>s
+</html>
