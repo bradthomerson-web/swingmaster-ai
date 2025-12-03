@@ -83,7 +83,7 @@
         .nav-item { color: #999; font-size: 28px; cursor: pointer; padding: 10px; }
         .nav-item.active { color: #008060; }
 
-        /* --- MODAL STYLES (Shared by both modals) --- */
+        /* MODAL STYLES */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -102,7 +102,7 @@
             width: 80%;
             max-width: 350px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            max-height: 80vh; /* Allow scrolling if list is long */
+            max-height: 80vh; 
             overflow-y: auto;
         }
 
@@ -136,7 +136,7 @@
             cursor: pointer;
         }
 
-        /* --- STYLES SPECIFIC TO STATS --- */
+        /* STATS STYLES */
         .stat-big-number {
             font-size: 48px;
             font-weight: bold;
@@ -161,6 +161,19 @@
             display: flex;
             justify-content: space-between;
         }
+        
+        /* DELETE BUTTON STYLE */
+        .delete-btn {
+            color: red;
+            font-size: 12px;
+            text-decoration: underline;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 15px;
+            border: none;
+            background: none;
+            width: 100%;
+        }
 
     </style>
 </head>
@@ -173,7 +186,7 @@
         </div>
 
         <div class="content">
-            <div class="main-card" onclick="alert('Generate Plan Clicked')">
+            <div class="main-card">
                 <h2 id="plan-title">Generate Today's Plan</h2>
                 <p id="plan-desc">Input a round to get a custom suggestion.</p>
             </div>
@@ -232,13 +245,26 @@
             <div class="stat-label">Average Score</div>
 
             <h4>Recent Rounds:</h4>
-            <ul class="history-list" id="scoreList">
-                </ul>
+            <ul class="history-list" id="scoreList"></ul>
+            
+            <button class="delete-btn" onclick="clearAllData()">Reset All Data</button>
         </div>
     </div>
 
     <script>
+        // 1. Initialize Memory
         let scoreHistory = [];
+
+        // 2. ON LOAD: Retrieve data from the browser's secret pocket
+        window.onload = function() {
+            let savedScores = localStorage.getItem('myGolfScores');
+            
+            if (savedScores) {
+                // Parse turns the text string back into a list of numbers
+                scoreHistory = JSON.parse(savedScores);
+                updateThePlan(); // Update the green card immediately
+            }
+        };
 
         // --- INPUT FORM LOGIC ---
         function openInputForm() {
@@ -255,14 +281,17 @@
             let newScoreNum = parseInt(newScoreText);
             scoreHistory.push(newScoreNum);
             
+            // SAVE TO BROWSER MEMORY
+            localStorage.setItem('myGolfScores', JSON.stringify(scoreHistory));
+
             closeInputForm();
             document.getElementById('scoreInput').value = "";
-            updateThePlan(); // Update the green card
+            updateThePlan();
+            alert("Round Saved Permanently!");
         }
 
         // --- TRENDS LOGIC ---
         function openTrends() {
-            // 1. Calculate Average
             let total = 0;
             if (scoreHistory.length === 0) {
                 document.getElementById('displayAverage').innerText = "--";
@@ -274,15 +303,11 @@
                 document.getElementById('displayAverage').innerText = avg;
             }
 
-            // 2. Build the List
             let listHTML = "";
-            // We loop backwards (length-1 down to 0) so the NEWEST score is at the top
             for(let i = scoreHistory.length - 1; i >= 0; i--) {
                 listHTML += '<li class="history-item"><span>Round ' + (i+1) + '</span> <strong>' + scoreHistory[i] + '</strong></li>';
             }
             document.getElementById('scoreList').innerHTML = listHTML;
-
-            // 3. Show Modal
             document.getElementById('trendsModal').style.display = 'flex';
         }
 
@@ -290,9 +315,23 @@
             document.getElementById('trendsModal').style.display = 'none';
         }
 
+        function clearAllData() {
+            if(confirm("Are you sure you want to delete all history?")) {
+                scoreHistory = [];
+                localStorage.removeItem('myGolfScores');
+                updateThePlan();
+                closeTrends();
+                alert("Data cleared.");
+            }
+        }
+
         // --- MAIN CARD LOGIC ---
         function updateThePlan() {
-            if (scoreHistory.length === 0) return;
+            if (scoreHistory.length === 0) {
+                document.getElementById('plan-title').innerText = "Generate Today's Plan";
+                document.getElementById('plan-desc').innerText = "Input a round to get a custom suggestion.";
+                return;
+            }
 
             let total = 0;
             for(let i=0; i<scoreHistory.length; i++) total += scoreHistory[i];
