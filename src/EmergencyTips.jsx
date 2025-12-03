@@ -5,7 +5,7 @@ const EmergencyTips = ({ isProUser }) => {
   const [response, setResponse] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🔒 LOCKED STATE (If user is not Pro)
+  // 🔒 LOCKED STATE
   if (!isProUser) {
     return (
       <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '8px', textAlign: 'center', backgroundColor: '#f9f9f9' }}>
@@ -18,32 +18,60 @@ const EmergencyTips = ({ isProUser }) => {
     );
   }
 
-  // 🧠 THE FUNCTION TO CALL AI
+  // 🧠 THE REAL AI FUNCTION
   const handleAskAI = async () => {
     if (!input) return;
     
     setIsLoading(true);
-    setResponse(null); // Clear old answer
+    setResponse(null);
 
-    // --- REAL AI LOGIC GOES HERE LATER ---
-    // For now, we simulate a delay so you can see the loading state!
-    setTimeout(() => {
-      setResponse(`(Simulated AI Response): Here is a quick drill to fix "${input}". Keep your head still and rotate through impact!`);
-      setIsLoading(false);
-    }, 2000);
-    // -------------------------------------
+    // 1. Get the Key from your .env file
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    if (!apiKey) {
+        setResponse("Error: Missing API Key. Check your .env file!");
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+      // 2. Call the Gemini API
+      const apiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ 
+              parts: [{ text: `You are a professional golf coach. A golfer is asking for help mid-round. The user says: "${input}". Give a very short, specific, actionable tip (max 2 sentences) to fix this immediately.` }] 
+            }]
+          }),
+        }
+      );
+
+      const data = await apiResponse.json();
+      
+      // 3. Extract the answer
+      const aiText = data.candidates[0].content.parts[0].text;
+      setResponse(aiText);
+
+    } catch (error) {
+      console.error("AI Error:", error);
+      setResponse("Sorry, the Coach is offline right now. Try again!");
+    }
+
+    setIsLoading(false);
   };
 
-  // ✅ UNLOCKED STATE (Chat Interface)
   return (
     <div style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-      <h3 style={{ color: 'red', marginTop: 0 }}>🚑 Swing 911 (AI Coach)</h3>
-      <p style={{ fontSize: '14px', color: '#666' }}>Describe your bad shot (e.g., "I keep slicing my driver")</p>
+      <h3 style={{ color: 'red', marginTop: 0 }}>🚑 Swing 911 (Live Coach)</h3>
+      <p style={{ fontSize: '14px', color: '#666' }}>What's going wrong? (e.g. "I'm topping my 5 iron")</p>
       
       <textarea
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Type here..."
+        placeholder="Describe your bad shot..."
         rows="3"
         style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', fontFamily: 'inherit' }}
       />
@@ -63,10 +91,9 @@ const EmergencyTips = ({ isProUser }) => {
           fontWeight: 'bold'
         }}
       >
-        {isLoading ? 'Analysing Swing...' : 'Ask Coach 🚑'}
+        {isLoading ? 'Consulting Coach...' : 'Get Fix 🚑'}
       </button>
 
-      {/* THE ANSWER BOX */}
       {response && (
         <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#eef', borderRadius: '5px', borderLeft: '4px solid red' }}>
           <strong>💡 Coach Says:</strong>
