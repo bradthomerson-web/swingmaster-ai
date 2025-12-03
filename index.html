@@ -46,6 +46,7 @@
             text-align: center;
             box-shadow: 0 10px 20px rgba(0,128,96, 0.2);
             cursor: pointer;
+            transition: all 0.3s ease; /* Makes the text change smooth */
         }
 
         .grid-container {
@@ -144,9 +145,9 @@
         </div>
 
         <div class="content">
-            <div class="main-card" onclick="alert('Generate Plan Clicked!')">
-                <h2 id="main-title">Generate Today's Plan</h2>
-                <p id="main-desc">AI-driven routine based on your recent stats.</p>
+            <div class="main-card" onclick="alert('This plan is now customized based on your scores!')">
+                <h2 id="plan-title">Generate Today's Plan</h2>
+                <p id="plan-desc">Input a round to get a custom suggestion.</p>
             </div>
 
             <div class="grid-container">
@@ -172,9 +173,9 @@
         </div>
 
         <div class="nav-bar">
-            <div class="nav-item active" onclick="alert('Home')">🏠</div>
-            <div class="nav-item" onclick="alert('Stats')">📊</div>
-            <div class="nav-item" onclick="alert('Profile')">👤</div>
+            <div class="nav-item active">🏠</div>
+            <div class="nav-item">📊</div>
+            <div class="nav-item">👤</div>
         </div>
     </div>
 
@@ -193,7 +194,6 @@
     </div>
 
     <script>
-        // 1. CREATE MEMORY: An empty list to hold scores
         let scoreHistory = [];
 
         function openForm() {
@@ -204,33 +204,64 @@
             document.getElementById('roundModal').style.display = 'none';
         }
 
-        // 2. SAVE FUNCTION
         function saveData() {
-            // Get the text from the box
-            let newScore = document.getElementById('scoreInput').value;
+            let newScoreText = document.getElementById('scoreInput').value;
             
-            // If the box is empty, stop here
-            if (newScore === "") {
+            if (newScoreText === "") {
                 alert("Please enter a number!");
                 return;
             }
 
-            // Add the new score to our list
-            scoreHistory.push(newScore);
+            // Convert "85" (text) into 85 (math number)
+            let newScoreNum = parseInt(newScoreText);
 
-            // Close form
+            // Add to memory
+            scoreHistory.push(newScoreNum);
+
+            // Close form and clear box
             closeForm();
-            
-            // Clear the input box for next time
             document.getElementById('scoreInput').value = "";
 
-            alert("Score saved! You now have " + scoreHistory.length + " rounds logged.");
+            // --- THIS IS THE NEW "AI" LOGIC ---
+            updateThePlan();
         }
 
-        // 3. TRENDS FUNCTION (Calculate Average)
+        // This function does the math and updates the green card
+        function updateThePlan() {
+            // 1. Calculate the Total
+            let total = 0;
+            for(let i = 0; i < scoreHistory.length; i++) {
+                total = total + scoreHistory[i];
+            }
+
+            // 2. Calculate Average
+            let average = total / scoreHistory.length;
+            // Round it to 1 decimal place (e.g., 85.4)
+            average = average.toFixed(1);
+
+            // 3. Decide the Strategy (The "Brain")
+            let title = "";
+            let description = "";
+
+            if (average > 90) {
+                title = "Focus: Ball Striking";
+                description = "Your avg is " + average + ". Let's hit more fairways.";
+            } else {
+                title = "Focus: Short Game";
+                description = "Your avg is " + average + ". Let's master 100 yards and in.";
+            }
+
+            // 4. Update the Screen
+            document.getElementById('plan-title').innerText = title;
+            document.getElementById('plan-desc').innerText = description;
+
+            // Alert the user
+            alert("New Round Saved! Your Training Plan has been updated based on your average of " + average);
+        }
+
         function showTrends() {
             if (scoreHistory.length === 0) {
-                alert("No rounds played yet. Go input a round!");
+                alert("No rounds played yet.");
             } else {
                 alert("Your Score History: " + scoreHistory);
             }
