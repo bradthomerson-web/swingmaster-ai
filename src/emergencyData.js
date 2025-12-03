@@ -1,5 +1,5 @@
 // emergencyTips.js
-export const emergencyTips = [
+export const EmergencyTips = [
   {
     id: 'slice',
     label: 'I\'m Slicing! 🍌',
