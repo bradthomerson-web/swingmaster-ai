@@ -24,7 +24,8 @@
             flex-direction: column;
             flex: 1;
             box-shadow: 0 0 20px rgba(0,0,0,0.05);
-            position: relative; /* Needed for the modal positioning */
+            position: relative; 
+            z-index: 1; /* Base layer */
         }
 
         /* Header Section */
@@ -35,25 +36,11 @@
             text-align: center;
         }
 
-        .logo {
-            font-size: 32px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
-        }
-
-        .subtitle {
-            font-size: 16px;
-            opacity: 0.9;
-        }
+        .logo { font-size: 32px; font-weight: bold; margin-bottom: 5px; }
+        .subtitle { font-size: 16px; opacity: 0.9; }
 
         /* Main Content */
-        .content {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+        .content { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 
         /* Cards */
         .main-card {
@@ -64,11 +51,6 @@
             text-align: center;
             box-shadow: 0 10px 20px rgba(0,128,96, 0.2);
             cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .main-card:active {
-            transform: scale(0.98);
         }
 
         .main-card h2 { margin: 0 0 10px 0; font-size: 24px; }
@@ -88,7 +70,6 @@
             text-align: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.03);
             cursor: pointer;
-            transition: border-color 0.2s;
         }
 
         .small-card:hover { border-color: #008060; }
@@ -109,40 +90,32 @@
             margin: 0 auto;
             z-index: 100;
         }
-
         .nav-item { color: #999; font-size: 28px; cursor: pointer; padding: 10px; }
         .nav-item.active { color: #008060; }
 
         /* --- MODAL (POPUP) STYLES --- */
-        /* The background shade */
         .modal-overlay {
             display: none; /* Hidden by default */
             position: fixed; 
-            z-index: 200; 
+            z-index: 9999; /* Super high so it sits on top of everything */
             left: 0;
             top: 0;
             width: 100%; 
             height: 100%; 
-            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+            background-color: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(2px); /* Blurs the background slightly */
             align-items: center;
             justify-content: center;
         }
 
-        /* The white box inside the overlay */
         .modal-box {
             background-color: white;
             width: 85%;
             max-width: 400px;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             position: relative;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from {transform: translateY(20px); opacity: 0;}
-            to {transform: translateY(0); opacity: 1;}
         }
 
         .modal-header {
@@ -153,9 +126,8 @@
         }
 
         .modal-title { font-size: 20px; font-weight: bold; color: #333; }
-        .close-btn { font-size: 24px; cursor: pointer; color: #999; }
+        .close-btn { font-size: 24px; cursor: pointer; color: #999; font-weight: bold; }
 
-        /* Form Inputs */
         .form-group { margin-bottom: 15px; }
         .form-label { display: block; margin-bottom: 5px; color: #666; font-size: 14px; }
         .form-input {
@@ -164,7 +136,7 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
-            box-sizing: border-box; /* Keeps padding inside width */
+            box-sizing: border-box;
         }
 
         .save-btn {
@@ -179,8 +151,6 @@
             cursor: pointer;
             margin-top: 10px;
         }
-        .save-btn:hover { background-color: #006e52; }
-
     </style>
 </head>
 <body>
@@ -226,10 +196,3 @@
 
     <div class="modal-overlay" id="roundModal">
         <div class="modal-box">
-            <div class="modal-header">
-                <span class="modal-title">Log New Round</span>
-                <span class="close-btn" id="closeModal">&times;</span>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Total Score</label>
