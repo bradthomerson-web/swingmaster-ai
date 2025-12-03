@@ -46,7 +46,7 @@
             text-align: center;
             box-shadow: 0 10px 20px rgba(0,128,96, 0.2);
             cursor: pointer;
-            transition: all 0.3s ease; /* Makes the text change smooth */
+            transition: all 0.3s ease; 
         }
 
         .grid-container {
@@ -83,8 +83,8 @@
         .nav-item { color: #999; font-size: 28px; cursor: pointer; padding: 10px; }
         .nav-item.active { color: #008060; }
 
-        /* POPUP FORM STYLES */
-        #roundModal {
+        /* --- MODAL STYLES (Shared by both modals) --- */
+        .modal-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0;
@@ -102,6 +102,8 @@
             width: 80%;
             max-width: 350px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            max-height: 80vh; /* Allow scrolling if list is long */
+            overflow-y: auto;
         }
 
         .modal-header {
@@ -134,6 +136,32 @@
             cursor: pointer;
         }
 
+        /* --- STYLES SPECIFIC TO STATS --- */
+        .stat-big-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #008060;
+            text-align: center;
+            margin: 10px 0;
+        }
+        .stat-label {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border-top: 1px solid #eee;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+
     </style>
 </head>
 <body>
@@ -145,18 +173,18 @@
         </div>
 
         <div class="content">
-            <div class="main-card" onclick="alert('This plan is now customized based on your scores!')">
+            <div class="main-card" onclick="alert('Generate Plan Clicked')">
                 <h2 id="plan-title">Generate Today's Plan</h2>
                 <p id="plan-desc">Input a round to get a custom suggestion.</p>
             </div>
 
             <div class="grid-container">
-                <div class="small-card" onclick="showTrends()">
+                <div class="small-card" onclick="openTrends()">
                     <span class="icon">📈</span>
                     <span class="label">My Trends</span>
                 </div>
                 
-                <div class="small-card" onclick="openForm()">
+                <div class="small-card" onclick="openInputForm()">
                     <span class="icon">⛳</span>
                     <span class="label">Input Round</span>
                 </div>
@@ -179,11 +207,11 @@
         </div>
     </div>
 
-    <div id="roundModal">
+    <div id="roundModal" class="modal-overlay">
         <div class="modal-box">
             <div class="modal-header">
                 <span>Log New Round</span>
-                <span class="close-x" onclick="closeForm()">X</span>
+                <span class="close-x" onclick="closeInputForm()">X</span>
             </div>
             
             <label>Total Score</label>
@@ -193,78 +221,96 @@
         </div>
     </div>
 
+    <div id="trendsModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>Performance Stats</span>
+                <span class="close-x" onclick="closeTrends()">X</span>
+            </div>
+            
+            <div class="stat-big-number" id="displayAverage">--</div>
+            <div class="stat-label">Average Score</div>
+
+            <h4>Recent Rounds:</h4>
+            <ul class="history-list" id="scoreList">
+                </ul>
+        </div>
+    </div>
+
     <script>
         let scoreHistory = [];
 
-        function openForm() {
+        // --- INPUT FORM LOGIC ---
+        function openInputForm() {
             document.getElementById('roundModal').style.display = 'flex';
         }
-
-        function closeForm() {
+        function closeInputForm() {
             document.getElementById('roundModal').style.display = 'none';
         }
 
         function saveData() {
             let newScoreText = document.getElementById('scoreInput').value;
+            if (newScoreText === "") { alert("Enter a number"); return; }
             
-            if (newScoreText === "") {
-                alert("Please enter a number!");
-                return;
-            }
-
-            // Convert "85" (text) into 85 (math number)
             let newScoreNum = parseInt(newScoreText);
-
-            // Add to memory
             scoreHistory.push(newScoreNum);
-
-            // Close form and clear box
-            closeForm();
+            
+            closeInputForm();
             document.getElementById('scoreInput').value = "";
-
-            // --- THIS IS THE NEW "AI" LOGIC ---
-            updateThePlan();
+            updateThePlan(); // Update the green card
         }
 
-        // This function does the math and updates the green card
-        function updateThePlan() {
-            // 1. Calculate the Total
+        // --- TRENDS LOGIC ---
+        function openTrends() {
+            // 1. Calculate Average
             let total = 0;
-            for(let i = 0; i < scoreHistory.length; i++) {
-                total = total + scoreHistory[i];
+            if (scoreHistory.length === 0) {
+                document.getElementById('displayAverage').innerText = "--";
+            } else {
+                for(let i=0; i<scoreHistory.length; i++) {
+                    total += scoreHistory[i];
+                }
+                let avg = (total / scoreHistory.length).toFixed(1);
+                document.getElementById('displayAverage').innerText = avg;
             }
 
-            // 2. Calculate Average
-            let average = total / scoreHistory.length;
-            // Round it to 1 decimal place (e.g., 85.4)
-            average = average.toFixed(1);
+            // 2. Build the List
+            let listHTML = "";
+            // We loop backwards (length-1 down to 0) so the NEWEST score is at the top
+            for(let i = scoreHistory.length - 1; i >= 0; i--) {
+                listHTML += '<li class="history-item"><span>Round ' + (i+1) + '</span> <strong>' + scoreHistory[i] + '</strong></li>';
+            }
+            document.getElementById('scoreList').innerHTML = listHTML;
 
-            // 3. Decide the Strategy (The "Brain")
+            // 3. Show Modal
+            document.getElementById('trendsModal').style.display = 'flex';
+        }
+
+        function closeTrends() {
+            document.getElementById('trendsModal').style.display = 'none';
+        }
+
+        // --- MAIN CARD LOGIC ---
+        function updateThePlan() {
+            if (scoreHistory.length === 0) return;
+
+            let total = 0;
+            for(let i=0; i<scoreHistory.length; i++) total += scoreHistory[i];
+            let avg = total / scoreHistory.length;
+
             let title = "";
             let description = "";
 
-            if (average > 90) {
+            if (avg > 90) {
                 title = "Focus: Ball Striking";
-                description = "Your avg is " + average + ". Let's hit more fairways.";
+                description = "Avg: " + avg.toFixed(1) + ". Let's hit more fairways.";
             } else {
                 title = "Focus: Short Game";
-                description = "Your avg is " + average + ". Let's master 100 yards and in.";
+                description = "Avg: " + avg.toFixed(1) + ". Let's master 100 yards and in.";
             }
 
-            // 4. Update the Screen
             document.getElementById('plan-title').innerText = title;
             document.getElementById('plan-desc').innerText = description;
-
-            // Alert the user
-            alert("New Round Saved! Your Training Plan has been updated based on your average of " + average);
-        }
-
-        function showTrends() {
-            if (scoreHistory.length === 0) {
-                alert("No rounds played yet.");
-            } else {
-                alert("Your Score History: " + scoreHistory);
-            }
         }
     </script>
 
