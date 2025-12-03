@@ -18,29 +18,14 @@ const EmergencyTips = ({ isProUser }) => {
     );
   }
 
- // 🧠 THE REAL AI FUNCTION (Updated for Gemini 1.5 Flash)
+// 🧠 FINAL AI FUNCTION (Using Gemini 2.5 Flash)
   const handleAskAI = async () => {
     if (!input) return;
     
     setIsLoading(true);
     setResponse(null);
 
-    // 1. Get the Key
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
-
-// --- PASTE THIS BLOCK HERE ---
-    console.log("Checking available models...");
-    try {
-        const listResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        const listData = await listResponse.json();
-        console.log("📜 MY ALLOWED MODELS:", listData); // <--- LOOK FOR THIS IN CONSOLE
-    } catch (e) {
-        console.error("List failed:", e);
-    }
-    // -----------------------------
-
-    // Debugging: Let's check if the key is actually there
-    console.log("Using API Key:", apiKey ? "Found key ending in..." + apiKey.slice(-4) : "MISSING!");
 
     if (!apiKey) {
         setResponse("Error: Missing API Key. Check your .env file!");
@@ -48,10 +33,10 @@ const EmergencyTips = ({ isProUser }) => {
         return;
     }
 
-  try {
-      // FIX: Changed 'v1beta' to 'v1' and used standard 'gemini-1.5-flash'
+    try {
+      // ✅ UPDATED URL: Using 'gemini-2.5-flash'
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -65,13 +50,11 @@ const EmergencyTips = ({ isProUser }) => {
 
       const data = await response.json();
 
-      // 3. Check for Google Errors (like 404 or 400)
       if (!response.ok) {
-        console.error("Google API Error:", data); // This prints the detailed error to the console
-        throw new Error(data.error?.message || `Error ${response.status}: ${response.statusText}`);
+        console.error("API Error:", data);
+        throw new Error(data.error?.message || "API connection failed");
       }
       
-      // 4. Extract the answer
       if (data.candidates && data.candidates.length > 0) {
         setResponse(data.candidates[0].content.parts[0].text);
       } else {
@@ -79,7 +62,7 @@ const EmergencyTips = ({ isProUser }) => {
       }
 
     } catch (error) {
-      console.error("Fetch Error:", error);
+      console.error("AI Error:", error);
       setResponse(`Sorry, the Coach is offline. (${error.message})`);
     }
 
