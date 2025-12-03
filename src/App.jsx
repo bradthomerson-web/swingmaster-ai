@@ -1,5 +1,5 @@
 import React from 'react';
-import SwingmasterAi from './SwingmasterAi'; 
+import SwingmasterAi from './SwingMasterAI'; 
 import './index.css';
 import EmergencyTips from './EmergencyTips'; // Make sure this matches your file name (Capital E)
 
