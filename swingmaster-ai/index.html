@@ -1,13 +1,186 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>swingmaster-ai</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwingMaster AI</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .phone-container {
+            width: 375px;
+            height: 812px;
+            background-color: #ffffff;
+            border-radius: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 8px solid #333;
+        }
+
+        /* Header Section */
+        .header {
+            background-color: #008060; /* Shopify-ish Green */
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* The Main 'Action' Card */
+        .main-card {
+            background: linear-gradient(135deg, #008060, #00a67d);
+            color: white;
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,128,96, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .main-card:active {
+            transform: scale(0.98);
+        }
+
+        .main-card h2 {
+            margin: 0 0 10px 0;
+            font-size: 22px;
+        }
+
+        .main-card p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Grid for secondary options */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .small-card {
+            background-color: white;
+            border: 1px solid #eee;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .small-card:hover {
+            border-color: #008060;
+        }
+
+        .icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        /* Navigation Bar */
+        .nav-bar {
+            background-color: white;
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .nav-item {
+            color: #999;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #008060;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        
+        <div class="header">
+            <div class="logo">SwingMasterAI</div>
+            <div class="subtitle">Your Personalized Coach</div>
+        </div>
+
+        <div class="content">
+            
+            <div class="main-card">
+                <h2>Generate Today's Plan</h2>
+                <p>AI-driven routine based on your recent stats.</p>
+            </div>
+
+            <div class="grid-container">
+                <div class="small-card">
+                    <span class="icon">📈</span>
+                    <span class="label">My Trends</span>
+                </div>
+                <div class="small-card">
+                    <span class="icon">⛳</span>
+                    <span class="label">Input Round</span>
+                </div>
+                <div class="small-card">
+                    <span class="icon">🏆</span>
+                    <span class="label">Goals</span>
+                </div>
+                <div class="small-card">
+                    <span class="icon">⚙️</span>
+                    <span class="label">Settings</span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="nav-bar">
+            <div class="nav-item active">🏠</div> <div class="nav-item">📊</div> <div class="nav-item">👤</div> </div>
+
+    </div>
+
+</body>
+</html>s
