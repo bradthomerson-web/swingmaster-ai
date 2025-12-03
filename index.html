@@ -24,11 +24,8 @@
             flex-direction: column;
             flex: 1;
             box-shadow: 0 0 20px rgba(0,0,0,0.05);
-            position: relative; 
-            z-index: 1; /* Base layer */
         }
 
-        /* Header Section */
         .header {
             background-color: #008060;
             color: white;
@@ -39,10 +36,8 @@
         .logo { font-size: 32px; font-weight: bold; margin-bottom: 5px; }
         .subtitle { font-size: 16px; opacity: 0.9; }
 
-        /* Main Content */
         .content { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
 
-        /* Cards */
         .main-card {
             background: linear-gradient(135deg, #008060, #00a67d);
             color: white;
@@ -52,9 +47,6 @@
             box-shadow: 0 10px 20px rgba(0,128,96, 0.2);
             cursor: pointer;
         }
-
-        .main-card h2 { margin: 0 0 10px 0; font-size: 24px; }
-        .main-card p { margin: 0; font-size: 16px; opacity: 0.95; }
 
         .grid-container {
             display: grid;
@@ -71,12 +63,10 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.03);
             cursor: pointer;
         }
-
         .small-card:hover { border-color: #008060; }
         .icon { font-size: 28px; margin-bottom: 10px; display: block; }
         .label { font-weight: 600; color: #333; font-size: 15px; }
 
-        /* Navigation Bar */
         .nav-bar {
             background-color: white;
             padding: 15px 0;
@@ -88,69 +78,10 @@
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
-            z-index: 100;
         }
         .nav-item { color: #999; font-size: 28px; cursor: pointer; padding: 10px; }
         .nav-item.active { color: #008060; }
 
-        /* --- MODAL (POPUP) STYLES --- */
-        .modal-overlay {
-            display: none; /* Hidden by default */
-            position: fixed; 
-            z-index: 9999; /* Super high so it sits on top of everything */
-            left: 0;
-            top: 0;
-            width: 100%; 
-            height: 100%; 
-            background-color: rgba(0,0,0,0.6); 
-            backdrop-filter: blur(2px); /* Blurs the background slightly */
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-box {
-            background-color: white;
-            width: 85%;
-            max-width: 400px;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-title { font-size: 20px; font-weight: bold; color: #333; }
-        .close-btn { font-size: 24px; cursor: pointer; color: #999; font-weight: bold; }
-
-        .form-group { margin-bottom: 15px; }
-        .form-label { display: block; margin-bottom: 5px; color: #666; font-size: 14px; }
-        .form-input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-
-        .save-btn {
-            width: 100%;
-            padding: 15px;
-            background-color: #008060;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
@@ -162,25 +93,27 @@
         </div>
 
         <div class="content">
-            <div class="main-card" id="btn-generate">
+            <div class="main-card" onclick="alert('Generate Plan Clicked!')">
                 <h2>Generate Today's Plan</h2>
                 <p>AI-driven routine based on your recent stats.</p>
             </div>
 
             <div class="grid-container">
-                <div class="small-card" id="btn-trends">
+                <div class="small-card" onclick="alert('Trends Clicked!')">
                     <span class="icon">📈</span>
                     <span class="label">My Trends</span>
                 </div>
-                <div class="small-card" id="btn-input">
+                
+                <div class="small-card" onclick="alert('Input Round Clicked!')">
                     <span class="icon">⛳</span>
                     <span class="label">Input Round</span>
                 </div>
-                <div class="small-card" id="btn-goals">
+                
+                <div class="small-card" onclick="alert('Goals Clicked!')">
                     <span class="icon">🏆</span>
                     <span class="label">Goals</span>
                 </div>
-                <div class="small-card" id="btn-settings">
+                <div class="small-card" onclick="alert('Settings Clicked!')">
                     <span class="icon">⚙️</span>
                     <span class="label">Settings</span>
                 </div>
@@ -194,5 +127,5 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="roundModal">
-        <div class="modal-box">
+</body>
+</html>
