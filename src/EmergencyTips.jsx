@@ -37,10 +37,10 @@ const EmergencyTips = ({ isProUser }) => {
         return;
     }
 
-   try {
-      // We added '-001' to the model name to be specific
+  try {
+      // FIX: Changed 'v1beta' to 'v1' and used standard 'gemini-1.5-flash'
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

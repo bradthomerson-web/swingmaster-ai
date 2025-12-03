@@ -1,35 +1,23 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import SwingmasterAi from './SwingMasterAi'; 
+import './index.css';
+import EmergencyTips from './EmergencyTips'; // Make sure this matches your file name (Capital E)
 
 function App() {
-  const [count, setCount] = useState(0)
+    // We set this to 'true' so you can see the feature immediately!
+    const isPro = true;
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    return (
+        <div>
+            {/* The Main App */}
+            <SwingmasterAi />
+
+            {/* The New Feature - Now it's out of the box! */}
+            <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
+                <EmergencyTips isProUser={isPro} />
+            </div>
+        </div>
+    );
 }
 
-export default App
+export default App;
