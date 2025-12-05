@@ -22,7 +22,7 @@ import {
 import { getGeminiAdvice } from './services/geminiService'; // Import the new function
 // ... other imports
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
 const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00';
 
 const STANDARD_CLUBS = [
@@ -31,7 +31,7 @@ const STANDARD_CLUBS = [
   'PW', 'GW', 'SW', 'LW'
 ];
 
-export default function SwingMasterAI() {
+export default function SwingMasterAI({ isPro }) {
   // --- STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState('profile');
   const [rounds, setRounds] = useState([]);
@@ -66,7 +66,7 @@ export default function SwingMasterAI() {
   const FREE_DAILY_AI_LIMIT = 1;
   const [aiUsesToday, setAiUsesToday] = useState(0);
   const [lastUseDate, setLastUseDate] = useState(null);
-  const [isPro, setIsPro] = useState(false);
+  
 
   // --- UPGRADE HANDLER ---
   const handleUpgradeToPro = () => {
@@ -74,9 +74,10 @@ export default function SwingMasterAI() {
     window.location.href = STRIPE_PAYMENT_URL;
   };
 
-  // --- LOAD DATA ON MOUNT ---
+// --- LOAD DATA ON MOUNT ---
   useEffect(() => {
     try {
+      // 1. Load basic golf data
       const savedRounds = localStorage.getItem('swingmaster_rounds');
       const savedProfile = localStorage.getItem('swingmaster_profile');
       const savedDistances = localStorage.getItem('swingmaster_club_distances');
@@ -85,10 +86,9 @@ export default function SwingMasterAI() {
       if (savedProfile) setUserProfile(JSON.parse(savedProfile));
       if (savedDistances) setClubDistances(JSON.parse(savedDistances));
 
-      // Load Usage Limits
+      // 2. Load Usage Limits (Daily limit tracking)
       const today = new Date().toDateString();
       const savedDate = localStorage.getItem('ai_last_use_date');
-      const savedPro = localStorage.getItem('ai_is_pro');
 
       if (savedDate !== today) {
         setAiUsesToday(0);
@@ -98,20 +98,13 @@ export default function SwingMasterAI() {
         setAiUsesToday(Number(localStorage.getItem('ai_uses_today') || 0));
         setLastUseDate(savedDate);
       }
-      setIsPro(savedPro === 'true');
-
-      // Check URL for Stripe success
-      const url = new URL(window.location.href);
-      if (url.searchParams.get('pro') === '1') {
-        setIsPro(true);
-        localStorage.setItem('ai_is_pro', "true");
-        // Clear URL
-        window.history.replaceState({}, document.title, url.pathname);
-        alert("Welcome to Pro! All features unlocked.");
-      }
+      
+      // REMOVED: All lines related to setIsPro(...) and checking the URL.
+      // App.jsx handles that now.
 
     } catch (err) { console.error(err); }
   }, []);
+
 
   // --- SAVE DATA EFFECTS ---
   useEffect(() => localStorage.setItem('swingmaster_rounds', JSON.stringify(rounds)), [rounds]);
@@ -133,8 +126,7 @@ export default function SwingMasterAI() {
   useEffect(() => {
     localStorage.setItem('ai_uses_today', aiUsesToday);
     localStorage.setItem('ai_last_use_date', lastUseDate);
-    localStorage.setItem('ai_is_pro', isPro);
-  }, [aiUsesToday, lastUseDate, isPro]);
+  }, [aiUsesToday, lastUseDate]);
 
 
   // --- HELPERS ---

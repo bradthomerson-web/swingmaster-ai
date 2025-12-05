@@ -33,7 +33,7 @@ function App() {
             </div>
 
             {/* Main App */}
-            <SwingmasterAi />
+            <SwingmasterAi isPro={isPro} />
 
             {/* Container for the Tools */}
             <div style={{ maxWidth: '600px', margin: '0 auto', padding: '0 20px' }}>
