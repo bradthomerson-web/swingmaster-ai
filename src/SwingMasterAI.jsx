@@ -1,6 +1,7 @@
 // src/SwingMasterAI.jsx
 import logoImage from './assets/Swingmaster_logo.jpg';
 import React, { useState, useEffect } from 'react';
+import ProfileQuiz from './ProfileQuiz';
 import {
   Activity,
   MapPin,
@@ -35,7 +36,8 @@ export default function SwingMasterAI({ isPro }) {
   // --- STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState('profile');
   const [rounds, setRounds] = useState([]);
-  
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
+
   // Profile
   const [userProfile, setUserProfile] = useState({
     name: '', age: '', handicap: '', strengths: '', weaknesses: '', equipment: '',
@@ -83,24 +85,16 @@ export default function SwingMasterAI({ isPro }) {
       const savedDistances = localStorage.getItem('swingmaster_club_distances');
       
       if (savedRounds) setRounds(JSON.parse(savedRounds));
-      if (savedProfile) setUserProfile(JSON.parse(savedProfile));
-      if (savedDistances) setClubDistances(JSON.parse(savedDistances));
-
-      // 2. Load Usage Limits (Daily limit tracking)
-      const today = new Date().toDateString();
-      const savedDate = localStorage.getItem('ai_last_use_date');
-
-      if (savedDate !== today) {
-        setAiUsesToday(0);
-        setLastUseDate(today);
-        localStorage.setItem('ai_last_use_date', today);
-      } else {
-        setAiUsesToday(Number(localStorage.getItem('ai_uses_today') || 0));
-        setLastUseDate(savedDate);
+      
+      // UPDATE THIS BLOCK:
+      if (savedProfile) {
+        setUserProfile(JSON.parse(savedProfile));
+        setIsProfileComplete(true); // <--- Mark as complete if loading from save
       }
       
-      // REMOVED: All lines related to setIsPro(...) and checking the URL.
-      // App.jsx handles that now.
+      if (savedDistances) setClubDistances(JSON.parse(savedDistances));
+
+      // ... rest of the code (Usage Limits, etc.) ...
 
     } catch (err) { console.error(err); }
   }, []);
@@ -299,7 +293,7 @@ export default function SwingMasterAI({ isPro }) {
               { id: 'dashboard', icon: Trophy, label: 'Stats' },
               { id: 'rounds', icon: Calendar, label: 'Log' },
               { id: 'profile', icon: User, label: 'Profile' },
-              { id: 'ai-hub', icon: Sparkles, label: 'AI Hub' },
+              { id: 'ai-hub', icon: Stethoscope, label: 'Swing Doctor' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
                 className={`flex flex-col items-center gap-1 text-xs font-bold ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`}>
@@ -357,19 +351,51 @@ export default function SwingMasterAI({ isPro }) {
             </div>
         )}
 
-        {/* PROFILE */}
+{/* PROFILE TAB */}
         {activeTab === 'profile' && (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-md mx-auto space-y-4">
-                <h2 className="text-xl font-bold">Golfer Profile</h2>
-                <input type="text" placeholder="Name" value={userProfile.name} onChange={e => setUserProfile({...userProfile, name: e.target.value})} className="w-full p-2 border rounded" />
-                <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="Age" value={userProfile.age} onChange={e => setUserProfile({...userProfile, age: e.target.value})} className="w-full p-2 border rounded" />
-                    <input type="text" placeholder="Handicap" value={userProfile.handicap} onChange={e => setUserProfile({...userProfile, handicap: e.target.value})} className="w-full p-2 border rounded" />
+          <div className="max-w-md mx-auto">
+            {!isProfileComplete ? (
+              // SHOW QUIZ IF NOT COMPLETE
+              <ProfileQuiz 
+                userProfile={userProfile} 
+                setUserProfile={setUserProfile} 
+                onComplete={() => {
+                    setIsProfileComplete(true); // <--- Mark done ONLY when button is clicked
+                    setActiveTab('ai-hub');
+                }} 
+              />
+            ) : (
+              // SHOW SUMMARY CARD IF COMPLETE
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4 text-center">
+                <div className="w-20 h-20 bg-slate-100 rounded-full mx-auto flex items-center justify-center mb-2">
+                    <User size={40} className="text-slate-400" />
                 </div>
-                <textarea placeholder="Equipment (e.g. Net, Mat, Driver, 7i)" value={userProfile.equipment} onChange={e => setUserProfile({...userProfile, equipment: e.target.value})} className="w-full p-2 border rounded h-20" />
-                <textarea placeholder="Weaknesses" value={userProfile.weaknesses} onChange={e => setUserProfile({...userProfile, weaknesses: e.target.value})} className="w-full p-2 border rounded h-20" />
-                <p className="text-xs text-slate-500">AI uses this data to customize drills.</p>
-            </div>
+                <h2 className="text-2xl font-bold">{userProfile.name}</h2>
+                <div className="flex justify-center gap-4 text-sm font-bold text-slate-500">
+                    <span className="bg-slate-100 px-3 py-1 rounded-full">Hcp: {userProfile.handicap}</span>
+                    <span className="bg-slate-100 px-3 py-1 rounded-full">Age: {userProfile.age}</span>
+                </div>
+                <div className="text-left bg-slate-50 p-4 rounded-lg border border-slate-100 mt-4">
+                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">My Bag / Equipment</p>
+                    <p className="text-sm font-medium">{userProfile.equipment || "No equipment listed"}</p>
+                </div>
+                <div className="text-left bg-red-50 p-4 rounded-lg border border-red-100">
+                    <p className="text-xs font-bold text-red-400 uppercase mb-1">The "Big Miss"</p>
+                    <p className="text-sm font-medium text-slate-700">{userProfile.weaknesses || "None listed"}</p>
+                </div>
+                <button 
+                    onClick={() => {
+                        // Reset profile AND the completion flag
+                        setUserProfile({ name: '', age: '', handicap: '', strengths: '', weaknesses: '', equipment: '' });
+                        setIsProfileComplete(false); 
+                    }}
+                    className="text-sm text-slate-400 underline hover:text-red-500"
+                >
+                    Reset Profile & Retake Quiz
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* AI HUB */}
@@ -377,7 +403,7 @@ export default function SwingMasterAI({ isPro }) {
             <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-4">
                 {/* TOOLBAR */}
                 <div className="md:w-1/3 bg-white p-4 rounded-xl border border-slate-200 h-fit">
-                    <h3 className="font-bold mb-4 flex items-center gap-2"><Sparkles className="text-amber-500"/> Tools</h3>
+                    <h3 className="font-bold mb-4 flex items-center gap-2"><Stethoscope className="text-green-600"/> Swing Doctor Tools</h3>
                     <div className="flex flex-col gap-2">
                         <button onClick={() => {setAiTool('trainer'); setAiResponse(null);}} className={`p-3 text-left rounded font-bold text-sm ${aiTool === 'trainer' ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' : 'hover:bg-slate-50'}`}>🏋️ Daily Trainer</button>
                         <button onClick={() => {setAiTool('caddie'); setAiResponse(null);}} className={`p-3 text-left rounded font-bold text-sm ${aiTool === 'caddie' ? 'bg-green-50 text-green-700 border-l-4 border-green-600' : 'hover:bg-slate-50'}`}>⛳ Smart Caddie</button>

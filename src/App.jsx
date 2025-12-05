@@ -50,7 +50,34 @@ function App() {
                     {' '} Simulate Pro User Mode (Dev Only)
                 </label>
             </div>
+{/* Dev Toggle */}
+<div style={{ padding: '10px', background: '#333', color: '#fff', textAlign: 'center', marginBottom: '20px', display: 'flex', justifyContent: 'center', gap: '20px', alignItems: 'center' }}>
+    
+    {/* 1. The Pro Toggle */}
+    <label style={{ cursor: 'pointer' }}>
+        <input 
+            type="checkbox" 
+            checked={isPro} 
+            onChange={(e) => {
+                setIsPro(e.target.checked);
+                localStorage.setItem('ai_is_pro', e.target.checked); 
+            }} 
+        />
+        {' '} Simulate Pro User Mode
+    </label>
 
+    {/* 2. NEW: The "Reset" Button */}
+    <button 
+        onClick={() => {
+            setHasStarted(false); // Reset State
+            localStorage.removeItem('sm_has_started'); // Clear Memory
+        }}
+        style={{ fontSize: '12px', padding: '5px 10px', background: '#e11d48', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+    >
+        Reset to Landing Page
+    </button>
+
+</div>
             {/* Main Dashboard */}
             <SwingMasterAI isPro={isPro} />
 
