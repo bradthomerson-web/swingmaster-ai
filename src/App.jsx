@@ -1,22 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import SwingmasterAi from './SwingMasterAI'; 
+import SwingMasterAI from './SwingMasterAI'; 
+import LandingPage from './LandingPage'; // <--- The new import!
 import './index.css';
 import EmergencyTips from './EmergencyTips'; 
 import GPSRangefinder from './GPSRangefinder'; 
 
 function App() {
-    // 1. Default to FALSE (Locked) so it is secure by default
     const [isPro, setIsPro] = useState(false);
+    
+    // NEW STATE: Tracks if the user has clicked "Start" yet
+    const [hasStarted, setHasStarted] = useState(false);
 
-    // 2. Check Local Storage when the app loads to see if they are really Pro
     useEffect(() => {
+        // 1. Check Pro Status
         const savedProStatus = localStorage.getItem('ai_is_pro') === 'true';
         setIsPro(savedProStatus);
+        
+        // 2. Check if they have already seen the landing page
+        const alreadyStarted = localStorage.getItem('sm_has_started');
+        if (alreadyStarted) setHasStarted(true);
     }, []);
 
+    const handleStart = () => {
+        setHasStarted(true);
+        localStorage.setItem('sm_has_started', 'true'); // Remember this for next time
+    };
+
+    // --- VIEW LOGIC ---
+
+    // 1. If they haven't clicked Start, show the Landing Page
+    if (!hasStarted) {
+        return <LandingPage onStart={handleStart} />;
+    }
+
+    // 2. Otherwise, show the full Main App
     return (
         <div style={{ paddingBottom: '50px' }}>
-            {/* DEV TOGGLE: Use this to test, but now it starts unchecked for users! */}
+            {/* Dev Toggle */}
             <div style={{ padding: '10px', background: '#333', color: '#fff', textAlign: 'center', marginBottom: '20px' }}>
                 <label style={{ cursor: 'pointer' }}>
                     <input 
@@ -24,7 +44,6 @@ function App() {
                         checked={isPro} 
                         onChange={(e) => {
                             setIsPro(e.target.checked);
-                            // Optional: Update storage so it remembers your choice during testing
                             localStorage.setItem('ai_is_pro', e.target.checked); 
                         }} 
                     />
@@ -32,19 +51,13 @@ function App() {
                 </label>
             </div>
 
-            {/* Main App */}
-            <SwingmasterAi isPro={isPro} />
+            {/* Main Dashboard */}
+            <SwingMasterAI isPro={isPro} />
 
-            {/* Container for the Tools */}
+            {/* Tools Grid */}
             <div style={{ maxWidth: '600px', margin: '0 auto', padding: '0 20px' }}>
-                
-                {/* These tools will now receive 'false' unless the user is actually Pro */}
                 <GPSRangefinder isProUser={isPro} />
-
-                {/* spacer */}
                 <div style={{ height: '20px' }}></div>
-
-                {/* Emergency Tips - Now locked by default */}
                 <EmergencyTips isProUser={isPro} />
             </div>
         </div>
