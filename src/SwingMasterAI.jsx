@@ -1,6 +1,8 @@
 // src/SwingMasterAI.jsx
 import logoImage from './assets/Swingmaster_logo.jpg';
 import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown'; // <--- NEW IMPORT
+import UpgradeModal from './UpgradeModal'; // <--- NEW IMPORT
 import ProfileQuiz from './ProfileQuiz';
 import {
   Activity,
@@ -37,6 +39,7 @@ export default function SwingMasterAI({ isPro }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [rounds, setRounds] = useState([]);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Profile
   const [userProfile, setUserProfile] = useState({
@@ -71,10 +74,10 @@ export default function SwingMasterAI({ isPro }) {
   
 
   // --- UPGRADE HANDLER ---
-  const handleUpgradeToPro = () => {
-    console.log('➡️ Redirecting to Stripe checkout…');
+const handleUpgradeToPro = () => {
+    // This is called when they click the button INSIDE the modal
     window.location.href = STRIPE_PAYMENT_URL;
-  };
+};
 
 // --- LOAD DATA ON MOUNT ---
   useEffect(() => {
@@ -84,16 +87,26 @@ export default function SwingMasterAI({ isPro }) {
       const savedProfile = localStorage.getItem('swingmaster_profile');
       const savedDistances = localStorage.getItem('swingmaster_club_distances');
       
+     // ... inside useEffect ...
+
       if (savedRounds) setRounds(JSON.parse(savedRounds));
       
-      // UPDATE THIS BLOCK:
+      // --- NEW STRICTER CHECK ---
       if (savedProfile) {
-        setUserProfile(JSON.parse(savedProfile));
-        setIsProfileComplete(true); // <--- Mark as complete if loading from save
+        const parsed = JSON.parse(savedProfile);
+        setUserProfile(parsed);
+        
+        // Only say "Complete" if there is actual text in the name AND a handicap
+        if (parsed.name && parsed.name.trim() !== "" && parsed.handicap) {
+            setIsProfileComplete(true);
+        } else {
+            setIsProfileComplete(false); // Force the Quiz if data is empty
+        }
+      } else {
+        setIsProfileComplete(false); // No save file? Definitely show Quiz.
       }
       
       if (savedDistances) setClubDistances(JSON.parse(savedDistances));
-
       // ... rest of the code (Usage Limits, etc.) ...
 
     } catch (err) { console.error(err); }
@@ -218,13 +231,11 @@ export default function SwingMasterAI({ isPro }) {
 // --- 3. FIX MY SHOT LOGIC (PRO ONLY) ---
   const generateQuickFix = () => {
     // STRICT PRO CHECK
-    if (!isPro) {
-        // If they are free, send them to stripe
-        if(window.confirm("Emergency Caddie is a PRO feature. Unlock now?")) {
-            handleUpgradeToPro();
-        }
-        return;
-    }
+    // NEW:
+if (!isPro) {
+    setShowUpgradeModal(true); // <--- Just open the modal!
+    return;
+}
 
     if (!fixInput) return alert("Please describe your shot issue.");
     
@@ -280,7 +291,7 @@ export default function SwingMasterAI({ isPro }) {
               {isPro ? 'PRO MEMBER' : 'FREE'}
             </span>
             {!isPro && (
-              <button onClick={handleUpgradeToPro} className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500 text-slate-900">
+              <button onClick={() => setShowUpgradeModal(true)} className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500 text-slate-900">
                 Upgrade
               </button>
             )}
@@ -398,116 +409,200 @@ export default function SwingMasterAI({ isPro }) {
           </div>
         )}
 
-        {/* AI HUB */}
+    {/* SWING DOCTOR TAB (AI HUB) */}
         {activeTab === 'ai-hub' && (
-            <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-4">
-                {/* TOOLBAR */}
-                <div className="md:w-1/3 bg-white p-4 rounded-xl border border-slate-200 h-fit">
-                    <h3 className="font-bold mb-4 flex items-center gap-2"><Stethoscope className="text-green-600"/> Swing Doctor Tools</h3>
-                    <div className="flex flex-col gap-2">
-                        <button onClick={() => {setAiTool('trainer'); setAiResponse(null);}} className={`p-3 text-left rounded font-bold text-sm ${aiTool === 'trainer' ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600' : 'hover:bg-slate-50'}`}>🏋️ Daily Trainer</button>
-                        <button onClick={() => {setAiTool('caddie'); setAiResponse(null);}} className={`p-3 text-left rounded font-bold text-sm ${aiTool === 'caddie' ? 'bg-green-50 text-green-700 border-l-4 border-green-600' : 'hover:bg-slate-50'}`}>⛳ Smart Caddie</button>
-                        <button onClick={() => {setAiTool('distances'); setAiResponse(null);}} className={`p-3 text-left rounded font-bold text-sm ${aiTool === 'distances' ? 'bg-purple-50 text-purple-700 border-l-4 border-purple-600' : 'hover:bg-slate-50'}`}>📏 Distances</button>
-                        
-                        {/* EMERGENCY FIX BUTTON */}
-                        <button onClick={() => {setAiTool('fix'); setAiResponse(null);}} 
-                            className={`p-3 text-left rounded font-bold text-sm flex justify-between items-center ${aiTool === 'fix' ? 'bg-red-50 text-red-700 border-l-4 border-red-600' : 'hover:bg-slate-50'}`}>
-                            <span>🚑 Fix My Shot</span>
-                            {!isPro && <Lock size={14} className="text-slate-400"/>}
-                        </button>
+            <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 animate-fadeIn">
+                
+                {/* LEFT SIDE: THE "MEDICAL CHART" (MENU) */}
+                <div className="md:w-1/3 space-y-4">
+                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-lg">
+                            <Stethoscope className="text-green-600" /> Treatment Plan
+                        </h3>
+                        <div className="space-y-3">
+                            {[
+                                { id: 'trainer', label: 'Daily Trainer', icon: '🏋️', desc: 'Custom practice routine' },
+                                { id: 'caddie', label: 'Smart Caddie', icon: '⛳', desc: 'Club & shot advice' },
+                                { id: 'distances', label: 'Bag Mapping', icon: '📏', desc: 'Track your yardages' },
+                                { id: 'fix', label: 'Swing 911', icon: '🚑', desc: 'Emergency fix', locked: !isPro }
+                            ].map((tool) => (
+                                <button 
+                                    key={tool.id}
+                                    onClick={() => { setAiTool(tool.id); setAiResponse(null); }}
+                                    className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group
+                                        ${aiTool === tool.id 
+                                            ? 'border-green-500 bg-green-50 shadow-md ring-1 ring-green-500' 
+                                            : 'border-slate-100 hover:border-green-300 hover:bg-slate-50'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-2xl bg-white p-2 rounded-lg shadow-sm border border-slate-100">{tool.icon}</span>
+                                        <div>
+                                            <div className={`font-bold ${aiTool === tool.id ? 'text-green-800' : 'text-slate-700'}`}>{tool.label}</div>
+                                            <div className="text-xs text-slate-400 font-medium">{tool.desc}</div>
+                                        </div>
+                                    </div>
+                                    {tool.locked && <Lock size={16} className="text-slate-300 group-hover:text-red-400" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {/* PRO TIP CARD */}
+                    <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-lg bg-gradient-to-br from-slate-900 to-slate-800">
+                        <div className="flex items-center gap-2 mb-2 text-amber-400 font-bold text-sm uppercase tracking-wide">
+                            <Sparkles size={14}/> Pro Tip
+                        </div>
+                        <p className="text-sm text-slate-300 leading-relaxed">
+                            "Amateurs practice until they get it right. Professionals practice until they can't get it wrong."
+                        </p>
                     </div>
                 </div>
 
-                {/* INPUT AREA */}
-                <div className="md:w-2/3 bg-white p-6 rounded-xl border border-slate-200 min-h-[400px]">
-                    
-                    {/* 1. TRAINER VIEW */}
-                    {aiTool === 'trainer' && (
-                        <div className="space-y-4">
-                            <h3 className="font-bold text-lg">Daily Practice Generator</h3>
-                            <p className="text-sm text-slate-500">Based on your {userProfile.equipment || "Equipment"} and Stats.</p>
-                            <button onClick={generateDataDrivenPlan} disabled={loadingAI} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">
-                                {loadingAI ? "Thinking..." : "Generate Routine"}
-                            </button>
-                        </div>
-                    )}
-
-                    {/* 2. CADDIE VIEW */}
-                    {aiTool === 'caddie' && (
-                        <div className="space-y-4">
-                            <h3 className="font-bold text-lg">Smart Caddie</h3>
-                            <div className="grid grid-cols-2 gap-2">
-                                <input type="number" placeholder="Distance (yds)" className="p-2 border rounded" onChange={e => setCaddieData({...caddieData, distance: e.target.value})} />
-                                <select className="p-2 border rounded" onChange={e => setCaddieData({...caddieData, wind: e.target.value})}>
-                                    <option value="calm">Calm</option>
-                                    <option value="helping">Tailwind</option>
-                                    <option value="hurting">Headwind</option>
-                                </select>
-                            </div>
-                            <button onClick={generateCaddieAdvice} disabled={loadingAI} className="w-full bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700">
-                                {loadingAI ? "Calculating..." : "Get Club Advice"}
-                            </button>
-                        </div>
-                    )}
-
-                    {/* 3. DISTANCES VIEW */}
-                    {aiTool === 'distances' && (
-                        <div className="space-y-4">
-                            <h3 className="font-bold text-lg">Bag Mapping</h3>
-                            <div className="flex gap-2">
-                                <select className="p-2 border rounded flex-1" onChange={e => setNewDistanceEntry({...newDistanceEntry, club: e.target.value})}>
-                                    <option>Select Club</option>
-                                    {STANDARD_CLUBS.map(c => <option key={c}>{c}</option>)}
-                                </select>
-                                <input type="number" placeholder="Carry" className="p-2 border rounded w-24" onChange={e => setNewDistanceEntry({...newDistanceEntry, carry: e.target.value})} />
-                            </div>
-                            <button onClick={handleSaveDistance} className="w-full bg-purple-600 text-white py-2 rounded font-bold">Save Shot</button>
-                            {renderSummaryTable()}
-                        </div>
-                    )}
-
-                    {/* 4. FIX MY SHOT VIEW */}
-                    {aiTool === 'fix' && (
-                        <div className="space-y-4">
-                            <h3 className="font-bold text-lg text-red-600 flex items-center gap-2"><Stethoscope size={20}/> Emergency Caddie</h3>
-                            {!isPro ? (
-                                <div className="text-center p-6 bg-slate-50 rounded-lg border border-slate-200">
-                                    <Lock className="mx-auto text-slate-400 mb-2" size={32} />
-                                    <p className="font-bold text-slate-700">Pro Feature</p>
-                                    <p className="text-sm text-slate-500 mb-4">Unlock real-time swing fixes on the course.</p>
-                                    <button onClick={handleUpgradeToPro} className="bg-amber-400 text-slate-900 px-6 py-2 rounded-full font-bold">Upgrade for $49</button>
+                {/* RIGHT SIDE: THE "PRESCRIPTION PAD" (INPUT & OUTPUT) */}
+                <div className="md:w-2/3">
+                    <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[500px]">
+                        
+                        {/* TOOL HEADERS */}
+                        <div className="mb-8 border-b border-slate-100 pb-6">
+                            {aiTool === 'trainer' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Daily Practice Generator</h2>
+                                    <p className="text-slate-500">Based on your <strong>{userProfile.equipment || "Setup"}</strong> and current Stats.</p>
                                 </div>
-                            ) : (
-                                <>
-                                    <p className="text-sm text-slate-600">What is happening right now? (e.g. "Topping every iron", "Slicing driver badly")</p>
-                                    <textarea className="w-full border rounded p-3 h-24" placeholder="Describe the miss..." onChange={e => setFixInput(e.target.value)}></textarea>
-                                   <button 
-    onClick={generateQuickFix} 
-    disabled={loadingAI} 
-    className="w-full bg-red-600 text-white py-3 rounded-lg font-bold hover:bg-red-700"
->
-    {loadingAI ? "Analyzing Swing..." : "Get Quick Fix"}
-</button>
-                                </>
+                            )}
+                            {aiTool === 'caddie' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Smart Caddie</h2>
+                                    <p className="text-slate-500">Enter your conditions to get the perfect club recommendation.</p>
+                                </div>
+                            )}
+                            {aiTool === 'distances' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Bag Mapping</h2>
+                                    <p className="text-slate-500">Log your carry distances to help the AI make better choices.</p>
+                                </div>
+                            )}
+                            {aiTool === 'fix' && (
+                                <div>
+                                    <h2 className="text-2xl font-bold text-red-600 mb-2 flex items-center gap-2">
+                                        <AlertCircle className="fill-red-100"/> Emergency Fix
+                                    </h2>
+                                    <p className="text-slate-500">Mid-round meltdown? Describe the miss, get a band-aid.</p>
+                                </div>
                             )}
                         </div>
-                    )}
 
-                    {/* AI RESPONSE OUTPUT */}
-                    {aiResponse && (
-                        <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200 animate-fadeIn">
-                            <h4 className="font-bold mb-2 text-slate-700">Coach Says:</h4>
-                            <div className="prose prose-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                                {aiResponse.split('**').map((part, i) => i % 2 === 1 ? <span key={i} className="font-bold text-black bg-yellow-100">{part}</span> : part)}
-                            </div>
+                        {/* INPUT FORMS (Unchanged Logic, just container styling) */}
+                        <div className="space-y-6">
+                            {/* 1. TRAINER INPUT */}
+                            {aiTool === 'trainer' && (
+                                <button 
+                                    onClick={generateDataDrivenPlan} 
+                                    disabled={loadingAI} 
+                                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2"
+                                >
+                                    {loadingAI ? "Analyzing Stats..." : "Generate Today's Plan"} 
+                                    {!loadingAI && <Sparkles size={18}/>}
+                                </button>
+                            )}
+
+                            {/* 2. CADDIE INPUT */}
+                            {aiTool === 'caddie' && (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-500 uppercase">Distance to Pin</label>
+                                            <input type="number" placeholder="150" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-green-500 outline-none" onChange={e => setCaddieData({...caddieData, distance: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs font-bold text-slate-500 uppercase">Wind</label>
+                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:ring-2 focus:ring-green-500 outline-none" onChange={e => setCaddieData({...caddieData, wind: e.target.value})}>
+                                                <option value="calm">Calm</option>
+                                                <option value="helping">Helping (Tail)</option>
+                                                <option value="hurting">Hurting (Head)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button onClick={generateCaddieAdvice} disabled={loadingAI} className="w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-green-200 transition-all active:scale-95">
+                                        {loadingAI ? "Consulting Caddie..." : "What should I hit?"}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* 3. DISTANCES INPUT */}
+                            {aiTool === 'distances' && (
+                                <div className="space-y-4">
+                                    <div className="flex gap-3">
+                                        <select className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" onChange={e => setNewDistanceEntry({...newDistanceEntry, club: e.target.value})}>
+                                            <option>Select Club</option>
+                                            {STANDARD_CLUBS.map(c => <option key={c}>{c}</option>)}
+                                        </select>
+                                        <input type="number" placeholder="Yards" className="w-32 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg" onChange={e => setNewDistanceEntry({...newDistanceEntry, carry: e.target.value})} />
+                                    </div>
+                                    <button onClick={handleSaveDistance} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-700">Log Shot Data</button>
+                                    {renderSummaryTable()}
+                                </div>
+                            )}
+
+                            {/* 4. FIX MY SHOT INPUT */}
+                            {aiTool === 'fix' && (
+                                !isPro ? (
+                                    <div className="text-center py-10 px-6 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                                        <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Lock size={32} />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Pro Access Only</h3>
+                                        <p className="text-slate-500 mb-6 max-w-sm mx-auto">The Emergency Caddie is reserved for Pro members. Unlock it to save your round.</p>
+                                        <button onClick={handleUpgradeToPro} className="bg-amber-400 hover:bg-amber-300 text-slate-900 px-8 py-3 rounded-full font-bold shadow-lg shadow-amber-200 transition-all transform hover:scale-105">
+                                            Unlock for $49
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <textarea 
+                                            className="w-full p-4 bg-red-50 border border-red-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none min-h-[120px]" 
+                                            placeholder="Example: I'm slicing my driver, or I keep topping my irons..." 
+                                            onChange={e => setFixInput(e.target.value)}
+                                        ></textarea>
+                                        <button onClick={generateQuickFix} disabled={loadingAI} className="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-red-200 transition-all active:scale-95">
+                                            {loadingAI ? "Diagnosing..." : "Fix My Swing"}
+                                        </button>
+                                    </div>
+                                )
+                            )}
                         </div>
-                    )}
 
+                        {/* AI RESPONSE AREA */}
+                        {aiResponse && (
+                            <div className="mt-8 pt-8 border-t border-slate-100 animate-fadeIn">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                        <User className="text-green-600" size={20}/>
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-slate-900">Swing Doctor Analysis</div>
+                                        <div className="text-xs text-slate-400">Just now</div>
+                                    </div>
+                                </div>
+                                <div className="prose prose-slate max-w-none p-6 bg-slate-50 rounded-2xl border border-slate-100 text-slate-700 leading-relaxed">
+                                    <ReactMarkdown>{aiResponse}</ReactMarkdown>
+                                </div>
+                            </div>
+                        )}
+                        
+                    </div>
                 </div>
             </div>
         )}
 
       </main>
+      {/* UPGRADE MODAL - Lives here, always ready to pop up */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+        onUpgrade={handleUpgradeToPro} 
+      />
     </div>
   );
 }

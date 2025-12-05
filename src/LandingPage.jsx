@@ -27,7 +27,7 @@ export default function LandingPage({ onStart }) {
           Start Free Assessment <ArrowRight className="group-hover:translate-x-1 transition-transform"/>
         </button>
         
-        <p className="mt-4 text-sm text-slate-500">No credit card required • Free "Swing 911" Access</p>
+        <p className="mt-4 text-sm text-slate-500">No credit card required • Get your custom plan instantly!</p>
       </div>
 
       {/* SOCIAL PROOF / TRUST */}
