@@ -7,18 +7,18 @@ export default function LandingPage({ onStart }) {
       
       {/* HERO SECTION */}
       <div className="max-w-6xl mx-auto px-6 pt-20 pb-16 text-center">
-        <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-green-500/20 text-green-400 font-bold text-sm tracking-wide">
-          🚀 NEW: AI Caddie 2.0 Released
-        </div>
+      <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-green-500/20 text-green-400 font-bold text-sm tracking-wide flex items-center gap-2 mx-auto w-fit">
+  🩺 Meet Your Personal Swing Doctor
+</div>
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
           Drop 5 Strokes. <br/>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
             No Video Required.
           </span>
         </h1>
-        <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Stop struggling with complex video tools. SwingMaster AI analyzes your <strong>misses and stats</strong> to generate instant fixes and PGA-level practice plans.
-        </p>
+       <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+  Stop struggling with complex video tools. Get instant fixes, PGA-level practice plans, and a <strong className="text-white">Free Handicap Calculator</strong>.
+</p>
         
         <button 
           onClick={onStart}
@@ -71,16 +71,66 @@ export default function LandingPage({ onStart }) {
         </div>
       </div>
 
-      {/* FINAL CTA */}
-      <div className="text-center py-20 bg-gradient-to-b from-slate-900 to-slate-800">
-        <h2 className="text-3xl font-bold mb-6">Ready to break 80?</h2>
-        <button 
-          onClick={onStart}
-          className="bg-white text-slate-900 hover:bg-slate-200 font-bold py-3 px-8 rounded-full transition-colors"
-        >
-          Join SwingMaster AI Now
+      {/* HOW IT WORKS */}
+      <div className="py-20 bg-slate-800/30">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Your Path to Lower Scores</h2>
+            <p className="text-slate-400">No generic advice. We treat your specific symptoms.</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 relative">
+            {/* Connector Line (Desktop Only) */}
+            <div className="hidden md:block absolute top-12 left-[20%] right-[20%] h-0.5 bg-gradient-to-r from-green-500/0 via-green-500/50 to-green-500/0 z-0"></div>
+
+            {/* Step 1 */}
+            <div className="relative z-10 text-center group">
+              <div className="w-24 h-24 bg-slate-900 border-4 border-slate-800 group-hover:border-green-500 rounded-full flex items-center justify-center mx-auto mb-6 transition-colors shadow-xl">
+                <span className="text-3xl">📋</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">1. The Intake</h3>
+              <p className="text-slate-400 text-sm px-4">Take the 2-minute quiz to tell us about your game, your miss, and your equipment.</p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="relative z-10 text-center group">
+              <div className="w-24 h-24 bg-slate-900 border-4 border-slate-800 group-hover:border-green-500 rounded-full flex items-center justify-center mx-auto mb-6 transition-colors shadow-xl">
+                <span className="text-3xl">🩺</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">2. The Diagnosis</h3>
+              <p className="text-slate-400 text-sm px-4">The "Swing Doctor" analyzes your stats to identify exactly what to work on today.</p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="relative z-10 text-center group">
+              <div className="w-24 h-24 bg-slate-900 border-4 border-slate-800 group-hover:border-green-500 rounded-full flex items-center justify-center mx-auto mb-6 transition-colors shadow-xl">
+                <span className="text-3xl">💊</span>
+              </div>
+              <h3 className="text-xl font-bold mb-2">3. The Prescription</h3>
+              <p className="text-slate-400 text-sm px-4">Get a custom practice routine or an instant "Swing 911" fix for the course.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    {/* FINAL CTA */}
+      <div className="text-center py-20 bg-gradient-to-b from-slate-900 to-slate-800 relative overflow-hidden">
+        {/* Background Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+        
+        <div className="relative z-10">
+            <h2 className="text-4xl font-bold mb-4">Ready to break 80?</h2>
+            <p className="text-green-400 font-bold mb-8 uppercase tracking-widest text-xs">
+                ⚡ Launch Special: Lifetime Pro Access Available
+            </p>
+            <button 
+            onClick={onStart}
+            className="bg-white text-slate-900 hover:bg-green-400 hover:text-white hover:scale-105 font-bold py-4 px-10 rounded-full transition-all shadow-xl"
+            >
+            Start My Diagnosis
         </button>
       </div>
     </div>
+  </div>
   );
 }
