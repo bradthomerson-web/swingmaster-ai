@@ -18,6 +18,9 @@ import {
   Stethoscope, // Icon for Fix My Shot
   Lock,
 } from 'lucide-react';
+// src/SwingMasterAI.jsx
+import { getGeminiAdvice } from './services/geminiService'; // Import the new function
+// ... other imports
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00';
@@ -169,25 +172,17 @@ export default function SwingMasterAI() {
   const callGemini = async (prompt) => {
     setLoadingAI(true);
     setAiResponse(null);
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-        }
-      );
-      const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
-      setAiResponse(data.candidates?.[0]?.content?.parts?.[0]?.text);
-    } catch (err) {
-      console.error(err);
-      setAiResponse('Error connecting to AI Coach. Please try again.');
-    } finally {
-      setLoadingAI(false);
-    }
-  };
+ try {
+    // The complex fetch logic is now hidden in the service file
+    const text = await getGeminiAdvice(prompt);
+    setAiResponse(text);
+  } catch (err) {
+    // User-friendly error handling
+    setAiResponse(`⚠️ **Connection Error:** ${err.message}. Please try again.`);
+  } finally {
+    setLoadingAI(false);
+  }
+};
 
   // --- 1. TRAINER LOGIC ---
   const generateDataDrivenPlan = () => {
