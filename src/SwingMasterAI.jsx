@@ -26,7 +26,7 @@ import { getGeminiAdvice } from './services/geminiService'; // Import the new fu
 // ... other imports
 
 
-const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00';
+const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/6oU4gzdH6dpZ5KU4rE4AU03';
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', '4 Hybrid',
