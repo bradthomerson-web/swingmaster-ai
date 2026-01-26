@@ -1,155 +1,84 @@
 // src/SwingMasterAI.jsx
-import logoImage from './assets/Swingmaster_logo.jpg';
 import React, { useState, useEffect } from 'react';
-import ReactMarkdown from 'react-markdown'; // <--- NEW IMPORT
-import UpgradeModal from './UpgradeModal'; // <--- NEW IMPORT
-import ProfileQuiz from './ProfileQuiz';
-import {
-  Activity,
-  MapPin,
-  Sparkles,
-  Share2,
-  Plus,
-  TrendingUp,
-  Trophy,
-  Calendar,
-  Target,
-  User,
-  Save,
-  Box,
-  AlertCircle,
-  Stethoscope, // Icon for Fix My Shot
-  Lock,
-} from 'lucide-react';
-// src/SwingMasterAI.jsx
-import { getGeminiAdvice } from './services/geminiService'; // Import the new function
-// ... other imports
+// REMOVED 8 unused icons (Activity, Share2, Trash2, Box, AlertCircle, ChevronDown, CheckCircle, Star)
+import { MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, Navigation, Zap, Lock, CreditCard, Locate, Stethoscope } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import UpgradeModal from './UpgradeModal'; 
 
-
-const STRIPE_PAYMENT_URL = 'https://buy.stripe.com/6oU4gzdH6dpZ5KU4rE4AU03';
+const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
+const apiKey = ""; // ⚠️ Make sure your Gemini API Key is here
 
 const STANDARD_CLUBS = [
-  'Driver', '3 Wood', '5 Wood', '4 Hybrid',
-  '4 Iron', '5 Iron', '6 Iron', '7 Iron', '8 Iron', '9 Iron',
-  'PW', 'GW', 'SW', 'LW'
+  'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
+  '5 Iron', '6 Iron', '7 Iron', '8 Iron', '9 Iron', 
+  'Pitching Wedge', 'Gap Wedge', 'Sand Wedge', 'Lob Wedge'
 ];
 
+const EQUIPMENT_OPTIONS = ['Driving Range', 'Golf Net', 'Hitting Mat', 'Simulator', 'Alignment Stick', 'Full Bag'];
+
 export default function SwingMasterAI({ isPro }) {
-  // --- STATE MANAGEMENT ---
   const [activeTab, setActiveTab] = useState('profile');
-  const [rounds, setRounds] = useState([]);
-  const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  // Profile
-  const [userProfile, setUserProfile] = useState({
-    name: '', age: '', handicap: '', strengths: '', weaknesses: '', equipment: '',
+  // --- DATA STATE ---
+  const [rounds, setRounds] = useState([]);
+  const [userProfile, setUserProfile] = useState({ 
+    name: '', age: '', handicap: '', strengths: '', weaknesses: '', equipment: ''
   });
-
-  // Club Distances
-  const [clubDistances, setClubDistances] = useState([]);
+  const [newRound, setNewRound] = useState({ date: '', course: '', score: '', putts: '', fairways: '', gir: '' });
   const [newDistanceEntry, setNewDistanceEntry] = useState({ club: '', carry: '', total: '' });
   const [summaryDistances, setSummaryDistances] = useState({});
+  const [clubDistances, setClubDistances] = useState([]);
 
-  // Round Entry
-  const [newRound, setNewRound] = useState({
-    date: '', course: '', score: '', putts: '', fairways: '', gir: '',
-  });
-
-  // AI & Tools
-  const [aiTool, setAiTool] = useState('trainer'); // trainer, caddie, distances, fix
+  // --- AI STATE ---
+  const [aiTool, setAiTool] = useState('trainer');
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
-  
-  // Caddie Inputs
   const [caddieData, setCaddieData] = useState({ distance: '', wind: 'calm', lie: 'fairway' });
-  
-  // Fix My Shot Inputs
   const [fixInput, setFixInput] = useState('');
 
-  // Payment / Limits
-  const FREE_DAILY_AI_LIMIT = 1;
-  const [aiUsesToday, setAiUsesToday] = useState(0);
-  const [lastUseDate, setLastUseDate] = useState(null);
-  
+  // --- GPS STATE ---
+  const [gpsActive, setGpsActive] = useState(false);
+  const [startCoords, setStartCoords] = useState(null);
+  const [currentDistance, setCurrentDistance] = useState(0);
+  const [gpsError, setGpsError] = useState(null);
+  const [shotHistory, setShotHistory] = useState([]); 
+  const [selectedClub, setSelectedClub] = useState('Driver');
 
-  // --- UPGRADE HANDLER ---
-const handleUpgradeToPro = () => {
-    // This is called when they click the button INSIDE the modal
-    window.location.href = STRIPE_PAYMENT_URL;
-};
+  const handleUpgradeToPro = () => window.location.href = STRIPE_CHECKOUT_URL;
 
-// --- LOAD DATA ON MOUNT ---
+  // --- LOAD DATA ---
   useEffect(() => {
     try {
-      // 1. Load basic golf data
       const savedRounds = localStorage.getItem('swingmaster_rounds');
       const savedProfile = localStorage.getItem('swingmaster_profile');
       const savedDistances = localStorage.getItem('swingmaster_club_distances');
-      
-     // ... inside useEffect ...
-
       if (savedRounds) setRounds(JSON.parse(savedRounds));
-      
-      // --- NEW STRICTER CHECK ---
-      if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        setUserProfile(parsed);
-        
-        // Only say "Complete" if there is actual text in the name AND a handicap
-        if (parsed.name && parsed.name.trim() !== "" && parsed.handicap) {
-            setIsProfileComplete(true);
-        } else {
-            setIsProfileComplete(false); // Force the Quiz if data is empty
-        }
-      } else {
-        setIsProfileComplete(false); // No save file? Definitely show Quiz.
-      }
-      
+      if (savedProfile) setUserProfile(JSON.parse(savedProfile));
       if (savedDistances) setClubDistances(JSON.parse(savedDistances));
-      // ... rest of the code (Usage Limits, etc.) ...
-
     } catch (err) { console.error(err); }
   }, []);
 
-
-  // --- SAVE DATA EFFECTS ---
+  // --- SAVE EFFECTS ---
   useEffect(() => localStorage.setItem('swingmaster_rounds', JSON.stringify(rounds)), [rounds]);
   useEffect(() => localStorage.setItem('swingmaster_profile', JSON.stringify(userProfile)), [userProfile]);
   useEffect(() => localStorage.setItem('swingmaster_club_distances', JSON.stringify(clubDistances)), [clubDistances]);
-  
-  // Calculate Best Carry Distances
-  useEffect(() => {
-    const summaryMap = clubDistances.reduce((acc, entry) => {
-      const club = entry.club.trim(); 
-      const carry = Number(entry.carry); 
-      if (carry > 0 && carry > (acc[club] || 0)) acc[club] = carry;
-      return acc;
-    }, {});
-    setSummaryDistances(summaryMap);
-  }, [clubDistances]);
-
-  // Save Limits
-  useEffect(() => {
-    localStorage.setItem('ai_uses_today', aiUsesToday);
-    localStorage.setItem('ai_last_use_date', lastUseDate);
-  }, [aiUsesToday, lastUseDate]);
-
 
   // --- HELPERS ---
   const getAverages = () => {
     if (rounds.length === 0) return { score: '-', putts: '-', gir: '-', fairways: '-' };
-    const sum = rounds.reduce((acc, c) => ({
-      score: acc.score + Number(c.score),
-      putts: acc.putts + Number(c.putts),
-      gir: acc.gir + Number(c.gir),
-      fairways: acc.fairways + Number(c.fairways),
+    const sum = rounds.reduce((acc, curr) => ({
+      score: acc.score + Number(curr.score),
+      putts: acc.putts + Number(curr.putts),
+      gir: acc.gir + Number(curr.gir),
+      fairways: acc.fairways + Number(curr.fairways)
     }), { score: 0, putts: 0, gir: 0, fairways: 0 });
     return {
       score: (sum.score / rounds.length).toFixed(1),
       putts: (sum.putts / rounds.length).toFixed(1),
       gir: (sum.gir / rounds.length).toFixed(1),
-      fairways: (sum.fairways / rounds.length).toFixed(1),
+      fairways: (sum.fairways / rounds.length).toFixed(1)
     };
   };
   const averages = getAverages();
@@ -161,125 +90,135 @@ const handleUpgradeToPro = () => {
     setActiveTab('dashboard');
   };
 
+  const handleEquipmentChange = (item, isChecked) => {
+    let currentItems = userProfile.equipment ? userProfile.equipment.split(',').map(i => i.trim()).filter(i => i) : [];
+    if (isChecked) { if (!currentItems.includes(item)) currentItems.push(item); } else { currentItems = currentItems.filter(i => i !== item); }
+    setUserProfile({ ...userProfile, equipment: currentItems.join(', ') });
+  };
+
+  const handleMiscEquipment = (text) => {
+    let currentItems = userProfile.equipment ? userProfile.equipment.split(',').map(i => i.trim()) : [];
+    const knownItems = currentItems.filter(i => EQUIPMENT_OPTIONS.includes(i));
+    const newEquipmentString = knownItems.length > 0 ? knownItems.join(', ') + (text ? ', ' + text : '') : text;
+    setUserProfile({ ...userProfile, equipment: newEquipmentString });
+  };
+
+  const getMiscText = () => {
+    if (!userProfile.equipment) return '';
+    const items = userProfile.equipment.split(',').map(i => i.trim());
+    return items.filter(i => !EQUIPMENT_OPTIONS.includes(i)).join(', ');
+  };
+
   const handleSaveDistance = () => {
     if (!newDistanceEntry.club || !newDistanceEntry.carry) return;
-    setClubDistances([{...newDistanceEntry, id: Date.now(), carry: Number(newDistanceEntry.carry), total: Number(newDistanceEntry.total)}, ...clubDistances]);
+    setClubDistances([{...newDistanceEntry, id: Date.now(), carry: Number(newDistanceEntry.carry)}, ...clubDistances]);
     setNewDistanceEntry({ club: '', carry: '', total: '' });
   };
 
-  // --- AI API CALL ---
+  // --- GPS ---
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; 
+    const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180, Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(Δφ/2)*Math.sin(Δφ/2) + Math.cos(φ1)*Math.cos(φ2)*Math.sin(Δλ/2)*Math.sin(Δλ/2);
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 1.09361);
+  };
+
+  const startShot = () => {
+    if (!navigator.geolocation) { setGpsError("GPS not supported."); return; }
+    setGpsActive(true); setCurrentDistance(0); setGpsError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setStartCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => setGpsError("Location Error"), { enableHighAccuracy: true }
+    );
+  };
+
+  const saveShot = () => {
+    if(currentDistance > 0) setShotHistory([{ dist: currentDistance, club: selectedClub }, ...shotHistory]);
+    setGpsActive(false); setStartCoords(null); setCurrentDistance(0);
+  };
+
+  useEffect(() => {
+    let watchId;
+    if (gpsActive && startCoords) {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => setCurrentDistance(calculateDistance(startCoords.lat, startCoords.lng, pos.coords.latitude, pos.coords.longitude)),
+        (err) => console.log(err), { enableHighAccuracy: true, maximumAge: 1000 }
+      );
+    }
+    return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
+  }, [gpsActive, startCoords]);
+
+  // --- AI ---
   const callGemini = async (prompt) => {
     setLoadingAI(true);
     setAiResponse(null);
- try {
-    // The complex fetch logic is now hidden in the service file
-    const text = await getGeminiAdvice(prompt);
-    setAiResponse(text);
-  } catch (err) {
-    // User-friendly error handling
-    setAiResponse(`⚠️ **Connection Error:** ${err.message}. Please try again.`);
-  } finally {
-    setLoadingAI(false);
-  }
-};
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      setAiResponse(text);
+    } catch (err) {
+      setAiResponse("Connection Error. Try again.");
+    } finally {
+      setLoadingAI(false);
+    }
+  };
 
-  // --- 1. TRAINER LOGIC ---
   const generateDataDrivenPlan = () => {
-    if (!userProfile.equipment) { alert('Please fill out Equipment in Profile first.'); setActiveTab('profile'); return; }
-    
-    // FREE TIER CHECK
-    if (!isPro && aiUsesToday >= FREE_DAILY_AI_LIMIT) { alert("Daily limit reached. Upgrade to PRO!"); return; }
-    setAiUsesToday(prev => prev + 1);
-
     const prompt = `
-      Act as a PGA Coach. Create a 1-hour practice routine.
-      MY STATS: Score Avg: ${averages.score}, Putts: ${averages.putts}, FIR: ${averages.fairways}.
-      MY EQUIPMENT: ${userProfile.equipment}.
-      MY WEAKNESSES: ${userProfile.weaknesses}.
-      Generate specific drills I can do with this equipment. Use Bold for Drill Names.CRITICAL FORMATTING RULE:
-      For every drill you recommend, you MUST provide a YouTube Search link formatted like this:
-      [Watch Video Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
-      
-      Structure the response in phases. Use Bold for Drill Names.
+      Act as a PGA Coach. Create a 45-minute practice plan.
+      MY STATS: Score Avg ${averages.score}, Putts ${averages.putts}.
+      EQUIPMENT: ${userProfile.equipment || 'Standard Range'}.
+      For EVERY drill, you MUST provide a YouTube Search link in this format:
+      [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
+      Format with clear headings.
     `;
     callGemini(prompt);
   };
 
-  // --- 2. CADDIE LOGIC (UPDATED WITH REAL DISTANCES) ---
   const generateCaddieAdvice = () => {
-    // FREE TIER CHECK
-    if (!isPro && aiUsesToday >= FREE_DAILY_AI_LIMIT) { alert("Daily limit reached. Upgrade to PRO!"); return; }
-    setAiUsesToday(prev => prev + 1);
-
-    // Turn summaryDistances object into a readable string
-    const myBag = Object.entries(summaryDistances)
-        .map(([club, dist]) => `${club}: ${dist}y`)
-        .join(', ');
-
-    const prompt = `
-      Act as a Tour Caddie. 
-      Shot Distance: ${caddieData.distance} yards.
-      Wind: ${caddieData.wind}.
-      Lie: ${caddieData.lie}.
-      
-      MY CARRY DISTANCES: ${myBag || "Unknown (Estimate based on 15 handicap)"}.
-      
-      Recommendation:
-      1. Which club should I hit?
-      2. What is the specific shot shape/strategy?
-      3. One swing thought.
-    `;
+    const prompt = `Act as a Tour Caddie. Shot: ${caddieData.distance} yards, Wind: ${caddieData.wind}, Lie: ${caddieData.lie}. Recommendation?`;
     callGemini(prompt);
   };
 
-// --- 3. FIX MY SHOT LOGIC (PRO ONLY) ---
   const generateQuickFix = () => {
-    // STRICT PRO CHECK
-    // NEW:
-if (!isPro) {
-    setShowUpgradeModal(true); // <--- Just open the modal!
-    return;
-}
-
-    if (!fixInput) return alert("Please describe your shot issue.");
-    
-    // Increment usage or allow unlimited for Pro
-    setLoadingAI(true);
-
+    if(!isPro) { setShowUpgradeModal(true); return; }
+    if(!fixInput) return;
     const prompt = `
-      Emergency Golf Fix. I am on the golf course right now.
-      MY PROBLEM: ${fixInput}.
-      
-      Give me:
-      1. ONE immediate "Band-Aid" fix to survive the round (Setup adjustment only).
-      2. ONE swing thought to focus on.
-      3. ONE drill to do after the round.
-      Keep it brief and encouraging.
+        CRITICAL: EMERGENCY GOLF MODE.
+        User Issue: "${fixInput}"
+        Provide a 10-second fix.
+        Format:
+        ## 🛑 SETUP FIX
+        (1 bullet point)
+        ## 🏌️‍♂️ SWING THOUGHT
+        (1 simple phrase)
+        NO EXTRA TEXT.
     `;
-    
     callGemini(prompt);
   };
 
-
-  // --- RENDER HELPERS ---
   const renderSummaryTable = () => {
-    const summaryArray = Object.entries(summaryDistances).sort(([, a], [, b]) => b - a);
+    const summaryArray = clubDistances ? clubDistances : [];
     if (summaryArray.length === 0) return <p className="text-slate-500 text-sm text-center">Log distances to see data here.</p>;
     return (
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mt-4">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-slate-50 text-slate-500"><tr><th className="p-3">Club</th><th className="p-3">Max Carry</th></tr></thead>
-          <tbody>
-            {summaryArray.map(([club, dist]) => (
-              <tr key={club} className="border-t"><td className="p-3 font-bold">{club}</td><td className="p-3 text-blue-600 font-bold">{dist} yds</td></tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="p-3 bg-slate-100 font-bold text-xs text-slate-500 uppercase">My Bag Data</div>
+        {summaryArray.map((entry, i) => (
+             <div key={i} className="flex justify-between p-3 border-b text-sm">
+                 <span className="font-bold text-slate-700">{entry.club}</span>
+                 <span className="text-blue-600 font-bold">{entry.carry}y</span>
+             </div>
+        ))}
       </div>
     );
   };
 
-  // --- MAIN RENDER ---
+  // --- VIEWS ---
   return (
     <div className="bg-slate-50 font-sans text-slate-900 max-w-7xl mx-auto w-full min-h-screen pb-20">
       
@@ -287,18 +226,12 @@ if (!isPro) {
       <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
         <div className="px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <img src={logoImage} alt="Logo" className="h-8 w-auto rounded" />
-            <h1 className="text-xl font-bold tracking-tight">SwingMaster <span className="text-green-500">AI</span></h1>
+            <h1 className="text-xl font-bold tracking-tight">SwingMaster <span className="text-green-500">Pro</span></h1>
           </div>
           <div className="flex items-center gap-2">
             <span className={`text-xs font-bold px-2 py-1 rounded-full ${isPro ? 'bg-amber-400 text-slate-900' : 'bg-slate-700 text-slate-100'}`}>
               {isPro ? 'PRO MEMBER' : 'FREE'}
             </span>
-            {!isPro && (
-              <button onClick={() => setShowUpgradeModal(true)} className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500 text-slate-900">
-                Upgrade
-              </button>
-            )}
           </div>
         </div>
         
@@ -308,7 +241,7 @@ if (!isPro) {
               { id: 'dashboard', icon: Trophy, label: 'Stats' },
               { id: 'rounds', icon: Calendar, label: 'Log' },
               { id: 'profile', icon: User, label: 'Profile' },
-              { id: 'ai-hub', icon: Stethoscope, label: 'Swing Doctor' },
+              { id: 'ai-hub', icon: Stethoscope, label: 'Coach' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
                 className={`flex flex-col items-center gap-1 text-xs font-bold ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`}>
@@ -366,58 +299,47 @@ if (!isPro) {
             </div>
         )}
 
-{/* PROFILE TAB */}
+        {/* PROFILE TAB (New Equipment Checkboxes) */}
         {activeTab === 'profile' && (
-          <div className="max-w-md mx-auto">
-            {!isProfileComplete ? (
-              // SHOW QUIZ IF NOT COMPLETE
-              <ProfileQuiz 
-                userProfile={userProfile} 
-                setUserProfile={setUserProfile} 
-                onComplete={() => {
-                    setIsProfileComplete(true); // <--- Mark done ONLY when button is clicked
-                    setActiveTab('ai-hub');
-                }} 
-              />
-            ) : (
-              // SHOW SUMMARY CARD IF COMPLETE
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4 text-center">
-                <div className="w-20 h-20 bg-slate-100 rounded-full mx-auto flex items-center justify-center mb-2">
-                    <User size={40} className="text-slate-400" />
+          <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+            <h2 className="font-bold text-slate-900 mb-6">Profile</h2>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs font-bold text-slate-500 uppercase">Name</label><input type="text" value={userProfile.name} onChange={e => setUserProfile({...userProfile, name: e.target.value})} className="w-full p-2 border rounded"/></div>
+                <div><label className="text-xs font-bold text-slate-500 uppercase">Hcp</label><input type="text" value={userProfile.handicap} onChange={e => setUserProfile({...userProfile, handicap: e.target.value})} className="w-full p-2 border rounded"/></div>
+            </div>
+
+            {/* New Equipment Checklist */}
+            <div className="mb-6">
+                <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">My Equipment</label>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                    {EQUIPMENT_OPTIONS.map(item => {
+                        const isChecked = userProfile.equipment?.includes(item);
+                        return (
+                            <label key={item} className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${isChecked ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                                <input type="checkbox" checked={isChecked || false} onChange={(e) => handleEquipmentChange(item, e.target.checked)} className="w-4 h-4 accent-blue-600"/>
+                                <span className="text-sm font-bold">{item}</span>
+                            </label>
+                        );
+                    })}
                 </div>
-                <h2 className="text-2xl font-bold">{userProfile.name}</h2>
-                <div className="flex justify-center gap-4 text-sm font-bold text-slate-500">
-                    <span className="bg-slate-100 px-3 py-1 rounded-full">Hcp: {userProfile.handicap}</span>
-                    <span className="bg-slate-100 px-3 py-1 rounded-full">Age: {userProfile.age}</span>
-                </div>
-                <div className="text-left bg-slate-50 p-4 rounded-lg border border-slate-100 mt-4">
-                    <p className="text-xs font-bold text-slate-400 uppercase mb-1">My Bag / Equipment</p>
-                    <p className="text-sm font-medium">{userProfile.equipment || "No equipment listed"}</p>
-                </div>
-                <div className="text-left bg-red-50 p-4 rounded-lg border border-red-100">
-                    <p className="text-xs font-bold text-red-400 uppercase mb-1">The "Big Miss"</p>
-                    <p className="text-sm font-medium text-slate-700">{userProfile.weaknesses || "None listed"}</p>
-                </div>
-                <button 
-                    onClick={() => {
-                        // Reset profile AND the completion flag
-                        setUserProfile({ name: '', age: '', handicap: '', strengths: '', weaknesses: '', equipment: '' });
-                        setIsProfileComplete(false); 
-                    }}
-                    className="text-sm text-slate-400 underline hover:text-red-500"
-                >
-                    Reset Profile & Retake Quiz
-                </button>
-              </div>
-            )}
+                
+                {/* Misc Input */}
+                <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Other / Misc (comma separated)</label>
+                <input 
+                    type="text" 
+                    value={getMiscText()} 
+                    onChange={(e) => handleMiscEquipment(e.target.value)}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+                    placeholder="e.g. FlightScope, PuttOut Mat..."
+                />
+            </div>
+            <button onClick={() => setActiveTab('dashboard')} className="bg-slate-900 text-white px-6 py-2 rounded font-bold"><Save size={18} className="inline mr-2"/> Save Profile</button>
           </div>
         )}
 
     {/* SWING DOCTOR TAB (AI HUB) */}
         {activeTab === 'ai-hub' && (
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 animate-fadeIn">
-                
-                {/* LEFT SIDE: THE "MEDICAL CHART" (MENU) */}
                 <div className="md:w-1/3 space-y-4">
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                         <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-lg">
@@ -430,183 +352,48 @@ if (!isPro) {
                                 { id: 'distances', label: 'Bag Mapping', icon: '📏', desc: 'Track your yardages' },
                                 { id: 'fix', label: 'Swing 911', icon: '🚑', desc: 'Emergency fix', locked: !isPro }
                             ].map((tool) => (
-                                <button 
-                                    key={tool.id}
-                                    onClick={() => { setAiTool(tool.id); setAiResponse(null); }}
-                                    className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group
-                                        ${aiTool === tool.id 
-                                            ? 'border-green-500 bg-green-50 shadow-md ring-1 ring-green-500' 
-                                            : 'border-slate-100 hover:border-green-300 hover:bg-slate-50'
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-2xl bg-white p-2 rounded-lg shadow-sm border border-slate-100">{tool.icon}</span>
-                                        <div>
-                                            <div className={`font-bold ${aiTool === tool.id ? 'text-green-800' : 'text-slate-700'}`}>{tool.label}</div>
-                                            <div className="text-xs text-slate-400 font-medium">{tool.desc}</div>
-                                        </div>
-                                    </div>
+                                <button key={tool.id} onClick={() => { setAiTool(tool.id); setAiResponse(null); }} className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group ${aiTool === tool.id ? 'border-green-500 bg-green-50 shadow-md ring-1 ring-green-500' : 'border-slate-100 hover:border-green-300 hover:bg-slate-50'}`}>
+                                    <div className="flex items-center gap-3"><span className="text-2xl bg-white p-2 rounded-lg shadow-sm border border-slate-100">{tool.icon}</span><div><div className={`font-bold ${aiTool === tool.id ? 'text-green-800' : 'text-slate-700'}`}>{tool.label}</div><div className="text-xs text-slate-400 font-medium">{tool.desc}</div></div></div>
                                     {tool.locked && <Lock size={16} className="text-slate-300 group-hover:text-red-400" />}
                                 </button>
                             ))}
                         </div>
                     </div>
-                    
-                    {/* PRO TIP CARD */}
-                    <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-lg bg-gradient-to-br from-slate-900 to-slate-800">
-                        <div className="flex items-center gap-2 mb-2 text-amber-400 font-bold text-sm uppercase tracking-wide">
-                            <Sparkles size={14}/> Pro Tip
-                        </div>
-                        <p className="text-sm text-slate-300 leading-relaxed">
-                            "Amateurs practice until they get it right. Professionals practice until they can't get it wrong."
-                        </p>
-                    </div>
                 </div>
 
-                {/* RIGHT SIDE: THE "PRESCRIPTION PAD" (INPUT & OUTPUT) */}
                 <div className="md:w-2/3">
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[500px]">
-                        
-                        {/* TOOL HEADERS */}
-                        <div className="mb-8 border-b border-slate-100 pb-6">
-                            {aiTool === 'trainer' && (
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Daily Practice Generator</h2>
-                                    <p className="text-slate-500">Based on your <strong>{userProfile.equipment || "Setup"}</strong> and current Stats.</p>
-                                </div>
-                            )}
-                            {aiTool === 'caddie' && (
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Smart Caddie</h2>
-                                    <p className="text-slate-500">Enter your conditions to get the perfect club recommendation.</p>
-                                </div>
-                            )}
-                            {aiTool === 'distances' && (
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Bag Mapping</h2>
-                                    <p className="text-slate-500">Log your carry distances to help the AI make better choices.</p>
-                                </div>
-                            )}
-                            {aiTool === 'fix' && (
-                                <div>
-                                    <h2 className="text-2xl font-bold text-red-600 mb-2 flex items-center gap-2">
-                                        <AlertCircle className="fill-red-100"/> Emergency Fix
-                                    </h2>
-                                    <p className="text-slate-500">Mid-round meltdown? Describe the miss, get a band-aid.</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* INPUT FORMS (Unchanged Logic, just container styling) */}
+                        {/* INPUT FORMS */}
                         <div className="space-y-6">
-                            {/* 1. TRAINER INPUT */}
-                            {aiTool === 'trainer' && (
-                                <button 
-                                    onClick={generateDataDrivenPlan} 
-                                    disabled={loadingAI} 
-                                    className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2"
-                                >
-                                    {loadingAI ? "Analyzing Stats..." : "Generate Today's Plan"} 
-                                    {!loadingAI && <Sparkles size={18}/>}
-                                </button>
-                            )}
-
-                            {/* 2. CADDIE INPUT */}
-                            {aiTool === 'caddie' && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold text-slate-500 uppercase">Distance to Pin</label>
-                                            <input type="number" placeholder="150" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg focus:ring-2 focus:ring-green-500 outline-none" onChange={e => setCaddieData({...caddieData, distance: e.target.value})} />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold text-slate-500 uppercase">Wind</label>
-                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:ring-2 focus:ring-green-500 outline-none" onChange={e => setCaddieData({...caddieData, wind: e.target.value})}>
-                                                <option value="calm">Calm</option>
-                                                <option value="helping">Helping (Tail)</option>
-                                                <option value="hurting">Hurting (Head)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <button onClick={generateCaddieAdvice} disabled={loadingAI} className="w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-green-200 transition-all active:scale-95">
-                                        {loadingAI ? "Consulting Caddie..." : "What should I hit?"}
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* 3. DISTANCES INPUT */}
-                            {aiTool === 'distances' && (
-                                <div className="space-y-4">
-                                    <div className="flex gap-3">
-                                        <select className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" onChange={e => setNewDistanceEntry({...newDistanceEntry, club: e.target.value})}>
-                                            <option>Select Club</option>
-                                            {STANDARD_CLUBS.map(c => <option key={c}>{c}</option>)}
-                                        </select>
-                                        <input type="number" placeholder="Yards" className="w-32 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg" onChange={e => setNewDistanceEntry({...newDistanceEntry, carry: e.target.value})} />
-                                    </div>
-                                    <button onClick={handleSaveDistance} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-700">Log Shot Data</button>
-                                    {renderSummaryTable()}
-                                </div>
-                            )}
-
-                            {/* 4. FIX MY SHOT INPUT */}
+                            {aiTool === 'trainer' && <button onClick={generateDataDrivenPlan} disabled={loadingAI} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2">{loadingAI ? "Analyzing Stats..." : "Generate Today's Plan"} {!loadingAI && <Sparkles size={18}/>}</button>}
+                            
+                            {aiTool === 'caddie' && <div className="space-y-4"><input type="number" placeholder="Distance to Pin" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg" onChange={e => setCaddieData({...caddieData, distance: e.target.value})} /><button onClick={generateCaddieAdvice} disabled={loadingAI} className="w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl font-bold text-lg">{loadingAI ? "Consulting..." : "Get Advice"}</button></div>}
+                            
+                            {aiTool === 'distances' && <div className="space-y-4"><div className="flex gap-3"><select className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" onChange={e => setNewDistanceEntry({...newDistanceEntry, club: e.target.value})}><option>Select Club</option>{STANDARD_CLUBS.map(c => <option key={c}>{c}</option>)}</select><input type="number" placeholder="Yards" className="w-32 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg" onChange={e => setNewDistanceEntry({...newDistanceEntry, carry: e.target.value})} /></div><button onClick={handleSaveDistance} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-700">Log Shot Data</button>{renderSummaryTable()}</div>}
+                            
                             {aiTool === 'fix' && (
                                 !isPro ? (
-                                    <div className="text-center py-10 px-6 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-                                        <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <Lock size={32} />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Pro Access Only</h3>
-                                        <p className="text-slate-500 mb-6 max-w-sm mx-auto">The Emergency Caddie is reserved for Pro members. Unlock it to save your round.</p>
-                                        <button onClick={handleUpgradeToPro} className="bg-amber-400 hover:bg-amber-300 text-slate-900 px-8 py-3 rounded-full font-bold shadow-lg shadow-amber-200 transition-all transform hover:scale-105">
-                                            Unlock for $49
-                                        </button>
-                                    </div>
+                                    <div className="text-center py-10 px-6 bg-slate-50 rounded-xl border border-dashed border-slate-300"><h3 className="text-xl font-bold text-slate-800 mb-2">Pro Access Only</h3><button onClick={handleUpgradeToPro} className="bg-amber-400 hover:bg-amber-300 text-slate-900 px-8 py-3 rounded-full font-bold">Unlock for $49</button></div>
                                 ) : (
-                                    <div className="space-y-4">
-                                        <textarea 
-                                            className="w-full p-4 bg-red-50 border border-red-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none min-h-[120px]" 
-                                            placeholder="Example: I'm slicing my driver, or I keep topping my irons..." 
-                                            onChange={e => setFixInput(e.target.value)}
-                                        ></textarea>
-                                        <button onClick={generateQuickFix} disabled={loadingAI} className="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-red-200 transition-all active:scale-95">
-                                            {loadingAI ? "Diagnosing..." : "Fix My Swing"}
-                                        </button>
-                                    </div>
+                                    <div className="space-y-4"><textarea className="w-full p-4 bg-red-50 border border-red-100 rounded-xl focus:ring-2 focus:ring-red-500 outline-none min-h-[120px]" placeholder="Describe your miss (e.g. slicing driver)" onChange={e => setFixInput(e.target.value)}></textarea><button onClick={generateQuickFix} disabled={loadingAI} className="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-xl font-bold text-lg">{loadingAI ? "Diagnosing..." : "Fix My Swing"}</button></div>
                                 )
                             )}
                         </div>
 
-                        {/* AI RESPONSE AREA */}
+                        {/* AI RESPONSE */}
                         {aiResponse && (
                             <div className="mt-8 pt-8 border-t border-slate-100 animate-fadeIn">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                        <User className="text-green-600" size={20}/>
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-slate-900">Swing Doctor Analysis</div>
-                                        <div className="text-xs text-slate-400">Just now</div>
-                                    </div>
-                                </div>
                                 <div className="prose prose-slate max-w-none p-6 bg-slate-50 rounded-2xl border border-slate-100 text-slate-700 leading-relaxed">
-                                    <ReactMarkdown>{aiResponse}</ReactMarkdown>
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiResponse}</ReactMarkdown>
                                 </div>
                             </div>
                         )}
-                        
                     </div>
                 </div>
             </div>
         )}
-
       </main>
-      {/* UPGRADE MODAL - Lives here, always ready to pop up */}
-      <UpgradeModal 
-        isOpen={showUpgradeModal} 
-        onClose={() => setShowUpgradeModal(false)} 
-        onUpgrade={handleUpgradeToPro} 
-      />
+      <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} onUpgrade={handleUpgradeToPro} />
     </div>
   );
 }
