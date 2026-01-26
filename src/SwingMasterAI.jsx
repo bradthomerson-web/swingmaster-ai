@@ -1,6 +1,5 @@
 // src/SwingMasterAI.jsx
 import React, { useState, useEffect } from 'react';
-// REMOVED 8 unused icons (Activity, Share2, Trash2, Box, AlertCircle, ChevronDown, CheckCircle, Star)
 import { MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, Navigation, Zap, Lock, CreditCard, Locate, Stethoscope } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -185,19 +184,27 @@ export default function SwingMasterAI({ isPro }) {
     callGemini(prompt);
   };
 
+  // --- UPDATED SWING 911 PROMPT ---
   const generateQuickFix = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!fixInput) return;
     const prompt = `
         CRITICAL: EMERGENCY GOLF MODE.
         User Issue: "${fixInput}"
-        Provide a 10-second fix.
+        
+        Provide a survival guide for the rest of the round.
         Format:
         ## 🛑 SETUP FIX
-        (1 bullet point)
-        ## 🏌️‍♂️ SWING THOUGHT
-        (1 simple phrase)
-        NO EXTRA TEXT.
+        (1 clear bullet point adjustment)
+        
+        ## 🏌️‍♂️ SWING THOUGHTS
+        1. (First simple thought)
+        2. (Second simple thought)
+        
+        ## 🏠 POST-ROUND DRILL
+        (Name of one drill to fix this permanently)
+        
+        Keep it concise.
     `;
     callGemini(prompt);
   };
