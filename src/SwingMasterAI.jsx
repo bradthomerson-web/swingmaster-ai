@@ -196,7 +196,11 @@ const handleUpgradeToPro = () => {
       MY STATS: Score Avg: ${averages.score}, Putts: ${averages.putts}, FIR: ${averages.fairways}.
       MY EQUIPMENT: ${userProfile.equipment}.
       MY WEAKNESSES: ${userProfile.weaknesses}.
-      Generate specific drills I can do with this equipment. Use Bold for Drill Names.
+      Generate specific drills I can do with this equipment. Use Bold for Drill Names.CRITICAL FORMATTING RULE:
+      For every drill you recommend, you MUST provide a YouTube Search link formatted like this:
+      [Watch Video Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
+      
+      Structure the response in phases. Use Bold for Drill Names.
     `;
     callGemini(prompt);
   };
