@@ -15,6 +15,16 @@ const CLUBS = [
   'Pitching Wedge', 'Gap Wedge', 'Sand Wedge', 'Lob Wedge'
 ];
 
+// 🛠️ NEW: Predefined Equipment List
+const EQUIPMENT_OPTIONS = [
+    'Driving Range', 
+    'Golf Net', 
+    'Hitting Mat', 
+    'Simulator', 
+    'Alignment Stick', // <--- Added
+    'Full Bag'        // <--- Added
+];
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isPro, setIsPro] = useState(false); 
@@ -82,6 +92,39 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
+  // --- EQUIPMENT HELPER LOGIC ---
+  const handleEquipmentChange = (item, isChecked) => {
+    let currentItems = userProfile.equipment ? userProfile.equipment.split(',').map(i => i.trim()).filter(i => i) : [];
+    
+    if (isChecked) {
+        if (!currentItems.includes(item)) currentItems.push(item);
+    } else {
+        currentItems = currentItems.filter(i => i !== item);
+    }
+    setUserProfile({ ...userProfile, equipment: currentItems.join(', ') });
+  };
+
+  const handleMiscEquipment = (text) => {
+    // 1. Get current known items (checkboxes)
+    let currentItems = userProfile.equipment ? userProfile.equipment.split(',').map(i => i.trim()) : [];
+    const knownItems = currentItems.filter(i => EQUIPMENT_OPTIONS.includes(i));
+    
+    // 2. Add the new custom text
+    const newEquipmentString = knownItems.length > 0 
+        ? knownItems.join(', ') + (text ? ', ' + text : '') 
+        : text;
+
+    setUserProfile({ ...userProfile, equipment: newEquipmentString });
+  };
+
+  // Parse "Misc" text for display
+  const getMiscText = () => {
+    if (!userProfile.equipment) return '';
+    const items = userProfile.equipment.split(',').map(i => i.trim());
+    const miscItems = items.filter(i => !EQUIPMENT_OPTIONS.includes(i));
+    return miscItems.join(', ');
+  };
+
   // --- GPS LOGIC ---
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371e3; 
@@ -136,7 +179,6 @@ export default function App() {
     }
   };
 
-  // --- 🎥 UPDATED: Trainer now adds YouTube Links ---
   const generateDataDrivenPlan = () => {
     const prompt = `
       Act as a PGA Coach. Create a 45-minute practice plan.
@@ -156,7 +198,6 @@ export default function App() {
     callGemini(prompt, false);
   };
 
-  // --- 🚨 UPDATED: Swing 911 (Speed Mode) ---
   const generateQuickTip = () => {
     if(!quickTipQuery) return;
     const prompt = `
@@ -277,6 +318,7 @@ export default function App() {
     </div>
   );
 
+  // 🛠️ UPDATED PROFILE RENDER with Checkboxes & Misc Box
   const renderProfile = () => (
     <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
         <h2 className="font-bold text-slate-900 mb-6">Profile</h2>
@@ -284,8 +326,39 @@ export default function App() {
             <div><label className="text-xs font-bold text-slate-500 uppercase">Name</label><input type="text" value={userProfile.name} onChange={e => setUserProfile({...userProfile, name: e.target.value})} className="w-full p-2 border rounded"/></div>
             <div><label className="text-xs font-bold text-slate-500 uppercase">Hcp</label><input type="text" value={userProfile.handicap} onChange={e => setUserProfile({...userProfile, handicap: e.target.value})} className="w-full p-2 border rounded"/></div>
         </div>
-        <div className="mb-6"><label className="text-xs font-bold text-slate-500 uppercase">Equipment</label><input type="text" value={userProfile.equipment} onChange={e => setUserProfile({...userProfile, equipment: e.target.value})} className="w-full p-2 border rounded" placeholder="e.g. Net, Range, Simulator"/></div>
-        <button onClick={() => setActiveTab('dashboard')} className="bg-slate-900 text-white px-6 py-2 rounded font-bold"><Save size={18} className="inline mr-2"/> Save</button>
+
+        {/* New Equipment Checklist */}
+        <div className="mb-6">
+            <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">My Equipment</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+                {EQUIPMENT_OPTIONS.map(item => {
+                    const isChecked = userProfile.equipment?.includes(item);
+                    return (
+                        <label key={item} className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${isChecked ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
+                            <input 
+                                type="checkbox" 
+                                checked={isChecked || false} 
+                                onChange={(e) => handleEquipmentChange(item, e.target.checked)}
+                                className="w-4 h-4 accent-blue-600"
+                            />
+                            <span className="text-sm font-bold">{item}</span>
+                        </label>
+                    );
+                })}
+            </div>
+            
+            {/* Misc Input */}
+            <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Other / Misc (comma separated)</label>
+            <input 
+                type="text" 
+                value={getMiscText()} 
+                onChange={(e) => handleMiscEquipment(e.target.value)}
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
+                placeholder="e.g. FlightScope, PuttOut Mat..."
+            />
+        </div>
+
+        <button onClick={() => setActiveTab('dashboard')} className="bg-slate-900 text-white px-6 py-2 rounded font-bold"><Save size={18} className="inline mr-2"/> Save Profile</button>
     </div>
   );
 
