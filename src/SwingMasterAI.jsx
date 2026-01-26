@@ -22,13 +22,11 @@ export default function SwingMasterAI({ isPro }) {
 
   // --- DATA STATE ---
   const [rounds, setRounds] = useState([]);
-  // Added 'weaknesses' to state tracking
   const [userProfile, setUserProfile] = useState({ 
     name: '', age: '', handicap: '', strengths: '', weaknesses: '', equipment: ''
   });
   const [newRound, setNewRound] = useState({ date: '', course: '', score: '', putts: '', fairways: '', gir: '' });
   const [newDistanceEntry, setNewDistanceEntry] = useState({ club: '', carry: '', total: '' });
-  const [summaryDistances, setSummaryDistances] = useState({});
   const [clubDistances, setClubDistances] = useState([]);
 
   // --- AI STATE ---
@@ -115,7 +113,7 @@ export default function SwingMasterAI({ isPro }) {
     setNewDistanceEntry({ club: '', carry: '', total: '' });
   };
 
-  // --- GPS ---
+  // --- GPS LOGIC ---
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371e3; 
     const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180, Δφ = (lat2 - lat1) * Math.PI / 180, Δλ = (lon2 - lon1) * Math.PI / 180;
@@ -148,7 +146,7 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
-  // --- AI ---
+  // --- AI LOGIC ---
   const callGemini = async (prompt) => {
     setLoadingAI(true);
     setAiResponse(null);
@@ -169,16 +167,13 @@ export default function SwingMasterAI({ isPro }) {
   };
 
   const generateDataDrivenPlan = () => {
-    // UPDATED PROMPT: Now includes Weaknesses again
     const prompt = `
       Act as a PGA Coach. Create a 45-minute practice plan.
       MY STATS: Score Avg ${averages.score}, Putts ${averages.putts}.
-      MY KEY WEAKNESS: "${userProfile.weaknesses}". 
+      MY KEY WEAKNESS: "${userProfile.weaknesses}".
       EQUIPMENT: ${userProfile.equipment || 'Standard Range'}.
-      
       For EVERY drill, you MUST provide a YouTube Search link in this format:
       [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
-      
       Format with clear headings.
     `;
     callGemini(prompt);
@@ -195,19 +190,15 @@ export default function SwingMasterAI({ isPro }) {
     const prompt = `
         CRITICAL: EMERGENCY GOLF MODE.
         User Issue: "${fixInput}"
-        
         Provide a survival guide for the rest of the round.
         Format:
         ## 🛑 SETUP FIX
         (1 clear bullet point adjustment)
-        
         ## 🏌️‍♂️ SWING THOUGHTS
         1. (First simple thought)
         2. (Second simple thought)
-        
         ## 🏠 POST-ROUND DRILL
         (Name of one drill to fix this permanently)
-        
         Keep it concise.
     `;
     callGemini(prompt);
@@ -229,6 +220,29 @@ export default function SwingMasterAI({ isPro }) {
     );
   };
 
+  // --- RESTORED: GPS RENDER FUNCTION ---
+  const renderGPS = () => (
+    <div className="max-w-xl mx-auto space-y-6 text-center">
+        <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-200 relative">
+            <h2 className="font-bold text-slate-900 mb-2 flex justify-center gap-2"><Navigation className="text-blue-600"/> GPS Measure</h2>
+            <div className="text-7xl font-black text-slate-900 mb-1">{currentDistance}</div>
+            <div className="text-slate-400 font-bold mb-6">YARDS</div>
+
+             {/* Club Selection for GPS */}
+            <div className="mb-6">
+                <select value={selectedClub} onChange={(e) => setSelectedClub(e.target.value)} className="w-full p-2 border rounded-lg font-bold text-center bg-slate-50">
+                    {STANDARD_CLUBS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+            </div>
+
+            {!gpsActive ? <button onClick={startShot} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex justify-center gap-2"><Locate/> Start Shot</button>
+            : <button onClick={saveShot} className="w-full bg-green-600 text-white py-4 rounded-xl font-bold animate-pulse">Stop & Save</button>}
+            {gpsError && <p className="text-red-500 text-sm mt-2">{gpsError}</p>}
+        </div>
+        {shotHistory.length > 0 && <div className="bg-white rounded-xl shadow p-4 text-left"><h3 className="font-bold border-b pb-2 mb-2">History</h3>{shotHistory.map((s,i)=><div key={i} className="flex justify-between py-2 border-b last:border-0"><span>{s.club}</span><span className="font-bold">{s.dist}y</span></div>)}</div>}
+    </div>
+  );
+
   // --- VIEWS ---
   return (
     <div className="bg-slate-50 font-sans text-slate-900 max-w-7xl mx-auto w-full min-h-screen pb-20">
@@ -246,11 +260,12 @@ export default function SwingMasterAI({ isPro }) {
           </div>
         </div>
         
-        {/* TAB NAV */}
+        {/* TAB NAV (Updated with GPS) */}
         <div className="flex justify-around bg-slate-800 p-2">
             {[
               { id: 'dashboard', icon: Trophy, label: 'Stats' },
               { id: 'rounds', icon: Calendar, label: 'Log' },
+              { id: 'gps', icon: Navigation, label: 'GPS' }, // <--- RESTORED
               { id: 'profile', icon: User, label: 'Profile' },
               { id: 'ai-hub', icon: Stethoscope, label: 'Coach' },
             ].map(tab => (
@@ -310,7 +325,10 @@ export default function SwingMasterAI({ isPro }) {
             </div>
         )}
 
-        {/* PROFILE TAB (Updated with 'Big Miss') */}
+        {/* GPS TAB (Restored Content) */}
+        {activeTab === 'gps' && renderGPS()}
+
+        {/* PROFILE TAB */}
         {activeTab === 'profile' && (
           <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
             <h2 className="font-bold text-slate-900 mb-6">Profile</h2>
@@ -336,16 +354,10 @@ export default function SwingMasterAI({ isPro }) {
                 <input type="text" value={getMiscText()} onChange={(e) => handleMiscEquipment(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="e.g. FlightScope, PuttOut Mat..."/>
             </div>
 
-            {/* --- NEW: THE BIG MISS INPUT --- */}
+            {/* BIG MISS INPUT */}
             <div className="mb-6">
                 <label className="text-xs font-bold text-red-500 uppercase mb-1 block">My Key Miss / Focus Area</label>
-                <input 
-                    type="text" 
-                    value={userProfile.weaknesses} 
-                    onChange={(e) => setUserProfile({...userProfile, weaknesses: e.target.value})}
-                    className="w-full p-3 bg-red-50 border border-red-100 rounded-lg text-sm" 
-                    placeholder="e.g. Slice off the tee, Fat iron shots..." 
-                />
+                <input type="text" value={userProfile.weaknesses} onChange={(e) => setUserProfile({...userProfile, weaknesses: e.target.value})} className="w-full p-3 bg-red-50 border border-red-100 rounded-lg text-sm" placeholder="e.g. Slice off the tee, Fat iron shots..." />
             </div>
 
             <button onClick={() => setActiveTab('dashboard')} className="bg-slate-900 text-white px-6 py-2 rounded font-bold"><Save size={18} className="inline mr-2"/> Save Profile</button>
