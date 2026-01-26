@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import UpgradeModal from './UpgradeModal'; 
 
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
-const apiKey = "AIzaSyBhb9KGlAH6xhu0TaFv1xAWDjR1ORaXcGI"; // ⚠️ Make sure your Gemini API Key is here
+const apiKey = ""; // ⚠️ Make sure your Gemini API Key is here
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
@@ -22,6 +22,7 @@ export default function SwingMasterAI({ isPro }) {
 
   // --- DATA STATE ---
   const [rounds, setRounds] = useState([]);
+  // Added 'weaknesses' to state tracking
   const [userProfile, setUserProfile] = useState({ 
     name: '', age: '', handicap: '', strengths: '', weaknesses: '', equipment: ''
   });
@@ -168,12 +169,16 @@ export default function SwingMasterAI({ isPro }) {
   };
 
   const generateDataDrivenPlan = () => {
+    // UPDATED PROMPT: Now includes Weaknesses again
     const prompt = `
       Act as a PGA Coach. Create a 45-minute practice plan.
       MY STATS: Score Avg ${averages.score}, Putts ${averages.putts}.
+      MY KEY WEAKNESS: "${userProfile.weaknesses}". 
       EQUIPMENT: ${userProfile.equipment || 'Standard Range'}.
+      
       For EVERY drill, you MUST provide a YouTube Search link in this format:
       [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
+      
       Format with clear headings.
     `;
     callGemini(prompt);
@@ -184,7 +189,6 @@ export default function SwingMasterAI({ isPro }) {
     callGemini(prompt);
   };
 
-  // --- UPDATED SWING 911 PROMPT ---
   const generateQuickFix = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!fixInput) return;
@@ -306,7 +310,7 @@ export default function SwingMasterAI({ isPro }) {
             </div>
         )}
 
-        {/* PROFILE TAB (New Equipment Checkboxes) */}
+        {/* PROFILE TAB (Updated with 'Big Miss') */}
         {activeTab === 'profile' && (
           <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
             <h2 className="font-bold text-slate-900 mb-6">Profile</h2>
@@ -315,7 +319,6 @@ export default function SwingMasterAI({ isPro }) {
                 <div><label className="text-xs font-bold text-slate-500 uppercase">Hcp</label><input type="text" value={userProfile.handicap} onChange={e => setUserProfile({...userProfile, handicap: e.target.value})} className="w-full p-2 border rounded"/></div>
             </div>
 
-            {/* New Equipment Checklist */}
             <div className="mb-6">
                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">My Equipment</label>
                 <div className="grid grid-cols-2 gap-2 mb-3">
@@ -329,17 +332,22 @@ export default function SwingMasterAI({ isPro }) {
                         );
                     })}
                 </div>
-                
-                {/* Misc Input */}
                 <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Other / Misc (comma separated)</label>
+                <input type="text" value={getMiscText()} onChange={(e) => handleMiscEquipment(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="e.g. FlightScope, PuttOut Mat..."/>
+            </div>
+
+            {/* --- NEW: THE BIG MISS INPUT --- */}
+            <div className="mb-6">
+                <label className="text-xs font-bold text-red-500 uppercase mb-1 block">My Key Miss / Focus Area</label>
                 <input 
                     type="text" 
-                    value={getMiscText()} 
-                    onChange={(e) => handleMiscEquipment(e.target.value)}
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm" 
-                    placeholder="e.g. FlightScope, PuttOut Mat..."
+                    value={userProfile.weaknesses} 
+                    onChange={(e) => setUserProfile({...userProfile, weaknesses: e.target.value})}
+                    className="w-full p-3 bg-red-50 border border-red-100 rounded-lg text-sm" 
+                    placeholder="e.g. Slice off the tee, Fat iron shots..." 
                 />
             </div>
+
             <button onClick={() => setActiveTab('dashboard')} className="bg-slate-900 text-white px-6 py-2 rounded font-bold"><Save size={18} className="inline mr-2"/> Save Profile</button>
           </div>
         )}
