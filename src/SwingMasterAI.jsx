@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import UpgradeModal from './UpgradeModal'; 
 
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
-const apiKey = "AIzaSyBwvytexniURa9KeSaZ236Jm4FRe2xEsNI"; // ⚠️ Make sure your Gemini API Key is here
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
