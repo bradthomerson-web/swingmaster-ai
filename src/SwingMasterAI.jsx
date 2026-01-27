@@ -147,24 +147,31 @@ export default function SwingMasterAI({ isPro }) {
   }, [gpsActive, startCoords]);
 
   // --- AI LOGIC ---
-  const callGemini = async (prompt) => {
-    setLoadingAI(true);
-    setAiResponse(null);
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      });
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      setAiResponse(text);
-    } catch (err) {
-      setAiResponse("Connection Error. Try again.");
-    } finally {
-      setLoadingAI(false);
+const callGemini = async (prompt) => {
+  setLoadingAI(true);
+  setAiResponse(null);
+  try {
+    // Check this URL carefully! It must be gemini-1.5-flash
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Check your API Key settings');
     }
-  };
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    setAiResponse(text);
+  } catch (err) {
+    setAiResponse(`Error: ${err.message}`);
+  } finally {
+    setLoadingAI(false);
+  }
+};
 
   const generateDataDrivenPlan = () => {
     const prompt = `
