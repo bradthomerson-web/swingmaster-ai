@@ -195,17 +195,27 @@ const callGemini = async (prompt) => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!fixInput) return;
     const prompt = `
-        CRITICAL: EMERGENCY GOLF MODE.
+       CRITICAL: EMERGENCY GOLF MODE.
         User Issue: "${fixInput}"
+        
         Provide a survival guide for the rest of the round.
+        
         Format:
-        ## 🛑 SETUP FIX
-        (1 clear bullet point adjustment)
-        ## 🏌️‍♂️ SWING THOUGHTS
-        1. (First simple thought)
-        2. (Second simple thought)
+        ## ❓ WHY IT'S HAPPENING
+        (1 sentence explaining the mechanical cause)
+
+        ## 🛑 SETUP FIXES (Try one)
+        * **Option A:** (Primary adjustment)
+        * **Option B:** (Alternative adjustment if A fails)
+        
+        ## 🏌️‍♂️ SWING THOUGHTS (Try one)
+        * **Option A:** (Primary thought)
+        * **Option B:** (Alternative thought)
+        
         ## 🏠 POST-ROUND DRILL
-        (Name of one drill to fix this permanently)
+        (Name of drill)
+        [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
+        
         Keep it concise.
     `;
     callGemini(prompt);
