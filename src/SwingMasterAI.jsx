@@ -7,11 +7,11 @@ import UpgradeModal from './UpgradeModal';
 
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
 
-// 🛠️ FIX 1: Grab API Key from .env file
+// 🛠️ API KEY: Grab from .env file
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
-// 🛠️ FIX 2: Use v1beta endpoint (Fixes the "model not found" error)
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+// 🛠️ FIX: Use 'gemini-1.5-flash' on 'v1beta' (The most reliable free model)
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
@@ -151,7 +151,7 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
-  // --- AI LOGIC (Updated to use Env Key & v1beta) ---
+  // --- AI LOGIC (Updated to use 1.5-Flash on v1beta) ---
   const callGemini = async (prompt) => {
     if (!apiKey) {
         alert("Missing API Key! Make sure VITE_GEMINI_API_KEY is in your .env file.");
