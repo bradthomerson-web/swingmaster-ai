@@ -6,7 +6,10 @@ import remarkGfm from 'remark-gfm';
 import UpgradeModal from './UpgradeModal'; 
 
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const apiKey = ""; // ⚠️ PASTE YOUR API KEY HERE
+
+// 🛠️ FIXED: Updated to the new Gemini 2.5 Model
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
@@ -146,32 +149,25 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
-  // --- AI LOGIC ---
-const callGemini = async (prompt) => {
-  setLoadingAI(true);
-  setAiResponse(null);
-  try {
-    // Check this URL carefully! It must be gemini-1.5-flash
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'Check your API Key settings');
+  // --- AI LOGIC (FIXED CONNECTION) ---
+  const callGemini = async (prompt) => {
+    setLoadingAI(true);
+    setAiResponse(null);
+    try {
+      const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      setAiResponse(text);
+    } catch (err) {
+      setAiResponse("Connection Error. Check API Key.");
+    } finally {
+      setLoadingAI(false);
     }
-
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    setAiResponse(text);
-  } catch (err) {
-    setAiResponse(`Error: ${err.message}`);
-  } finally {
-    setLoadingAI(false);
-  }
-};
+  };
 
   const generateDataDrivenPlan = () => {
     const prompt = `
@@ -195,26 +191,21 @@ const callGemini = async (prompt) => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!fixInput) return;
     const prompt = `
-       CRITICAL: EMERGENCY GOLF MODE.
+        CRITICAL: EMERGENCY GOLF MODE.
         User Issue: "${fixInput}"
-        
         Provide a survival guide for the rest of the round.
-        
         Format:
         ## ❓ WHY IT'S HAPPENING
         (1 sentence explaining the mechanical cause)
-
         ## 🛑 SETUP FIXES (Try one)
         * **Option A:** (Primary adjustment)
         * **Option B:** (Alternative adjustment if A fails)
-        
         ## 🏌️‍♂️ SWING THOUGHTS (Try one)
         * **Option A:** (Primary thought)
         * **Option B:** (Alternative thought)
-        
         ## 🏠 POST-ROUND DRILL
         (Name of drill)
-        (Brief explanation of how to perform the drill)
+        [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
         Keep it concise.
     `;
     callGemini(prompt);
@@ -236,21 +227,18 @@ const callGemini = async (prompt) => {
     );
   };
 
-  // --- RESTORED: GPS RENDER FUNCTION ---
+  // --- GPS RENDER ---
   const renderGPS = () => (
     <div className="max-w-xl mx-auto space-y-6 text-center">
         <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-200 relative">
             <h2 className="font-bold text-slate-900 mb-2 flex justify-center gap-2"><Navigation className="text-blue-600"/> GPS Measure</h2>
             <div className="text-7xl font-black text-slate-900 mb-1">{currentDistance}</div>
             <div className="text-slate-400 font-bold mb-6">YARDS</div>
-
-             {/* Club Selection for GPS */}
             <div className="mb-6">
                 <select value={selectedClub} onChange={(e) => setSelectedClub(e.target.value)} className="w-full p-2 border rounded-lg font-bold text-center bg-slate-50">
                     {STANDARD_CLUBS.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
             </div>
-
             {!gpsActive ? <button onClick={startShot} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex justify-center gap-2"><Locate/> Start Shot</button>
             : <button onClick={saveShot} className="w-full bg-green-600 text-white py-4 rounded-xl font-bold animate-pulse">Stop & Save</button>}
             {gpsError && <p className="text-red-500 text-sm mt-2">{gpsError}</p>}
@@ -262,8 +250,6 @@ const callGemini = async (prompt) => {
   // --- VIEWS ---
   return (
     <div className="bg-slate-50 font-sans text-slate-900 max-w-7xl mx-auto w-full min-h-screen pb-20">
-      
-      {/* HEADER */}
       <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
         <div className="px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -275,13 +261,11 @@ const callGemini = async (prompt) => {
             </span>
           </div>
         </div>
-        
-        {/* TAB NAV (Updated with GPS) */}
         <div className="flex justify-around bg-slate-800 p-2">
             {[
               { id: 'dashboard', icon: Trophy, label: 'Stats' },
               { id: 'rounds', icon: Calendar, label: 'Log' },
-              { id: 'gps', icon: Navigation, label: 'GPS' }, // <--- RESTORED
+              { id: 'gps', icon: Navigation, label: 'GPS' },
               { id: 'profile', icon: User, label: 'Profile' },
               { id: 'ai-hub', icon: Stethoscope, label: 'Coach' },
             ].map(tab => (
@@ -292,11 +276,7 @@ const callGemini = async (prompt) => {
             ))}
         </div>
       </header>
-
-      {/* CONTENT AREA */}
       <main className="p-4">
-        
-        {/* DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -322,8 +302,6 @@ const callGemini = async (prompt) => {
             )}
           </div>
         )}
-
-        {/* LOG ROUND */}
         {activeTab === 'rounds' && (
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-md mx-auto">
                 <h2 className="text-xl font-bold mb-4">Log Round</h2>
@@ -340,11 +318,7 @@ const callGemini = async (prompt) => {
                 </div>
             </div>
         )}
-
-        {/* GPS TAB (Restored Content) */}
         {activeTab === 'gps' && renderGPS()}
-
-        {/* PROFILE TAB */}
         {activeTab === 'profile' && (
           <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
             <h2 className="font-bold text-slate-900 mb-6">Profile</h2>
@@ -352,7 +326,6 @@ const callGemini = async (prompt) => {
                 <div><label className="text-xs font-bold text-slate-500 uppercase">Name</label><input type="text" value={userProfile.name} onChange={e => setUserProfile({...userProfile, name: e.target.value})} className="w-full p-2 border rounded"/></div>
                 <div><label className="text-xs font-bold text-slate-500 uppercase">Hcp</label><input type="text" value={userProfile.handicap} onChange={e => setUserProfile({...userProfile, handicap: e.target.value})} className="w-full p-2 border rounded"/></div>
             </div>
-
             <div className="mb-6">
                 <label className="text-xs font-bold text-slate-500 uppercase mb-2 block">My Equipment</label>
                 <div className="grid grid-cols-2 gap-2 mb-3">
@@ -369,18 +342,13 @@ const callGemini = async (prompt) => {
                 <label className="text-xs font-bold text-slate-400 uppercase mb-1 block">Other / Misc (comma separated)</label>
                 <input type="text" value={getMiscText()} onChange={(e) => handleMiscEquipment(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm" placeholder="e.g. FlightScope, PuttOut Mat..."/>
             </div>
-
-            {/* BIG MISS INPUT */}
             <div className="mb-6">
                 <label className="text-xs font-bold text-red-500 uppercase mb-1 block">My Key Miss / Focus Area</label>
                 <input type="text" value={userProfile.weaknesses} onChange={(e) => setUserProfile({...userProfile, weaknesses: e.target.value})} className="w-full p-3 bg-red-50 border border-red-100 rounded-lg text-sm" placeholder="e.g. Slice off the tee, Fat iron shots..." />
             </div>
-
             <button onClick={() => setActiveTab('dashboard')} className="bg-slate-900 text-white px-6 py-2 rounded font-bold"><Save size={18} className="inline mr-2"/> Save Profile</button>
           </div>
         )}
-
-    {/* SWING DOCTOR TAB (AI HUB) */}
         {activeTab === 'ai-hub' && (
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 animate-fadeIn">
                 <div className="md:w-1/3 space-y-4">
@@ -403,10 +371,8 @@ const callGemini = async (prompt) => {
                         </div>
                     </div>
                 </div>
-
                 <div className="md:w-2/3">
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[500px]">
-                        {/* INPUT FORMS */}
                         <div className="space-y-6">
                             {aiTool === 'trainer' && <button onClick={generateDataDrivenPlan} disabled={loadingAI} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2">{loadingAI ? "Analyzing Stats..." : "Generate Today's Plan"} {!loadingAI && <Sparkles size={18}/>}</button>}
                             
@@ -422,8 +388,6 @@ const callGemini = async (prompt) => {
                                 )
                             )}
                         </div>
-
-                        {/* AI RESPONSE */}
                         {aiResponse && (
                             <div className="mt-8 pt-8 border-t border-slate-100 animate-fadeIn">
                                 <div className="prose prose-slate max-w-none p-6 bg-slate-50 rounded-2xl border border-slate-100 text-slate-700 leading-relaxed">
