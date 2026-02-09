@@ -6,10 +6,12 @@ import remarkGfm from 'remark-gfm';
 import UpgradeModal from './UpgradeModal'; 
 
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
-const apiKey = ""; // ⚠️ PASTE YOUR API KEY HERE
 
-// 🛠️ FIXED: Updated to the new Gemini 2.5 Model
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+// 🛠️ FIX 1: Grab API Key from .env file
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
+
+// 🛠️ FIX 2: Use v1beta endpoint (Fixes the "model not found" error)
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
@@ -149,8 +151,12 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
-  // --- AI LOGIC (FIXED CONNECTION) ---
+  // --- AI LOGIC (Updated to use Env Key & v1beta) ---
   const callGemini = async (prompt) => {
+    if (!apiKey) {
+        alert("Missing API Key! Make sure VITE_GEMINI_API_KEY is in your .env file.");
+        return;
+    }
     setLoadingAI(true);
     setAiResponse(null);
     try {
@@ -160,10 +166,14 @@ export default function SwingMasterAI({ isPro }) {
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       });
       const data = await response.json();
+      
+      // Check for API errors
+      if (data.error) throw new Error(data.error.message);
+      
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       setAiResponse(text);
     } catch (err) {
-      setAiResponse("Connection Error. Check API Key.");
+      setAiResponse(`⚠️ Error: ${err.message}. Check your API Key and connection.`);
     } finally {
       setLoadingAI(false);
     }
@@ -187,6 +197,7 @@ export default function SwingMasterAI({ isPro }) {
     callGemini(prompt);
   };
 
+  // --- UPDATED: Swing 911 (Text Explanation) ---
   const generateQuickFix = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!fixInput) return;
@@ -205,7 +216,7 @@ export default function SwingMasterAI({ isPro }) {
         * **Option B:** (Alternative thought)
         ## 🏠 POST-ROUND DRILL
         (Name of drill)
-        [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
+        (Brief explanation of how to perform the drill)
         Keep it concise.
     `;
     callGemini(prompt);
