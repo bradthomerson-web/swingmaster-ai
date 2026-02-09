@@ -10,8 +10,9 @@ const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00";
 // 🛠️ API KEY: Grab from .env file
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
-// 🛠️ FIX: Use 'gemini-1.5-flash' on 'v1beta' (The most reliable free model)
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+// 🛠️ FIX: Update to Gemini 2.5 Flash (Current Active Model)
+// If you get a "Quota" error, try 'gemini-2.5-flash-lite'
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
@@ -151,7 +152,7 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
-  // --- AI LOGIC (Updated to use 1.5-Flash on v1beta) ---
+  // --- AI LOGIC (Updated for 2.5 Flash) ---
   const callGemini = async (prompt) => {
     if (!apiKey) {
         alert("Missing API Key! Make sure VITE_GEMINI_API_KEY is in your .env file.");
