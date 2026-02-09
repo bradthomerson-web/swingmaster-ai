@@ -214,8 +214,7 @@ const callGemini = async (prompt) => {
         
         ## 🏠 POST-ROUND DRILL
         (Name of drill)
-        [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
-        
+        (Brief explanation of how to perform the drill)
         Keep it concise.
     `;
     callGemini(prompt);
