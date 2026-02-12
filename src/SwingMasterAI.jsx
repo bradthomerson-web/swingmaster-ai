@@ -1,16 +1,17 @@
 // src/SwingMasterAI.jsx
-import React, { useState, useEffect } from 'react';
-import { MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, Navigation, Zap, Lock, CreditCard, Locate, Stethoscope, Dumbbell } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, 
+  Navigation, Zap, Lock, CreditCard, Locate, Stethoscope, Dumbbell, Video, 
+  Users, BarChart3, ChevronRight, Camera 
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import UpgradeModal from './UpgradeModal'; 
 
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
 
-// 🛠️ API KEY: Grab from .env file
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
-
-// 🛠️ FIX: Restored the working Gemini 2.5 Flash Model
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 const STANDARD_CLUBS = [
@@ -49,6 +50,10 @@ export default function SwingMasterAI({ isPro }) {
   const [gpsError, setGpsError] = useState(null);
   const [shotHistory, setShotHistory] = useState([]); 
   const [selectedClub, setSelectedClub] = useState('Driver');
+  
+  // --- VIDEO STATE ---
+  const videoRef = useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
 
   const handleUpgradeToPro = () => window.location.href = STRIPE_CHECKOUT_URL;
 
@@ -152,6 +157,22 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
+  // --- VIDEO LOGIC (FREE) ---
+  const startCamera = async () => {
+    setCameraActive(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch (err) { console.error("Camera Error", err); }
+  };
+
+  const stopCamera = () => {
+    setCameraActive(false);
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+    }
+  };
+
   // --- AI LOGIC ---
   const callGemini = async (prompt) => {
     if (!apiKey) {
@@ -167,9 +188,7 @@ export default function SwingMasterAI({ isPro }) {
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
       });
       const data = await response.json();
-      
       if (data.error) throw new Error(data.error.message);
-      
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       setAiResponse(text);
     } catch (err) {
@@ -179,62 +198,27 @@ export default function SwingMasterAI({ isPro }) {
     }
   };
 
-  // 1. Daily Trainer
   const generateDataDrivenPlan = () => {
-    const prompt = `
-      Act as a PGA Coach. Create a 45-minute practice plan.
-      MY STATS: Score Avg ${averages.score}, Putts ${averages.putts}.
-      MY KEY WEAKNESS: "${userProfile.weaknesses}".
-      EQUIPMENT: ${userProfile.equipment || 'Standard Range'}.
-      For EVERY drill, you MUST provide a YouTube Search link in this format:
-      [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
-      Format with clear headings.
-    `;
+    const prompt = `Act as a PGA Coach. Create a 45-minute practice plan. MY STATS: Score Avg ${averages.score}, Putts ${averages.putts}. WEAKNESS: "${userProfile.weaknesses}". EQUIPMENT: ${userProfile.equipment || 'Standard'}. Provide YouTube links for drills.`;
     callGemini(prompt);
   };
 
-  // 2. Smart Caddie
   const generateCaddieAdvice = () => {
     const prompt = `Act as a Tour Caddie. Shot: ${caddieData.distance} yards, Wind: ${caddieData.wind}, Lie: ${caddieData.lie}. Recommendation?`;
     callGemini(prompt);
   };
 
-  // 3. Swing 911 (Emergency)
   const generateQuickFix = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!fixInput) return;
-    const prompt = `
-        CRITICAL: EMERGENCY GOLF MODE.
-        User Issue: "${fixInput}"
-        Provide a survival guide for the rest of the round.
-        Format:
-        ## ❓ WHY IT'S HAPPENING
-        (1 sentence explaining the mechanical cause)
-        ## 🛑 SETUP FIXES (Try one)
-        * **Option A:** (Primary adjustment)
-        * **Option B:** (Alternative adjustment if A fails)
-        ## 🏌️‍♂️ SWING THOUGHTS (Try one)
-        * **Option A:** (Primary thought)
-        * **Option B:** (Alternative thought)
-        ## 🏠 POST-ROUND DRILL
-        (Name of drill)
-        (Brief explanation of how to perform the drill)
-        Keep it concise.
-    `;
+    const prompt = `EMERGENCY GOLF MODE. User Issue: "${fixInput}". Provide 1 mechanical cause, 2 setup fixes (Option A/B), 2 swing thoughts (Option A/B), and 1 post-round drill explanation. Concise.`;
     callGemini(prompt);
   };
 
-  // 4. Custom Practice (Pro Only)
   const generateCustomPractice = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!customPracticeInput) return;
-    const prompt = `
-        Act as a PGA Coach. I want to work specifically on: "${customPracticeInput}".
-        Create a focused practice session with 3 specific drills.
-        For EVERY drill, you MUST provide a YouTube Search link in this format:
-        [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
-        Format with clear headings. Keep it concise.
-    `;
+    const prompt = `Act as a PGA Coach. I want to work on: "${customPracticeInput}". Create a focused session with 3 drills. Provide YouTube links for each.`;
     callGemini(prompt);
   };
 
@@ -254,7 +238,6 @@ export default function SwingMasterAI({ isPro }) {
     );
   };
 
-  // --- GPS RENDER ---
   const renderGPS = () => (
     <div className="max-w-xl mx-auto space-y-6 text-center">
         <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-200 relative">
@@ -288,22 +271,25 @@ export default function SwingMasterAI({ isPro }) {
             </span>
           </div>
         </div>
-        <div className="flex justify-around bg-slate-800 p-2">
+        <div className="flex justify-around bg-slate-800 p-2 overflow-x-auto">
             {[
               { id: 'dashboard', icon: Trophy, label: 'Stats' },
+              { id: 'leagues', icon: Users, label: 'Leagues' }, // NEW
               { id: 'rounds', icon: Calendar, label: 'Log' },
               { id: 'gps', icon: Navigation, label: 'GPS' },
               { id: 'profile', icon: User, label: 'Profile' },
               { id: 'ai-hub', icon: Stethoscope, label: 'Coach' },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} 
-                className={`flex flex-col items-center gap-1 text-xs font-bold ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`}>
+                className={`flex flex-col items-center gap-1 text-xs font-bold px-2 ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`}>
                 <tab.icon size={20} /> {tab.label}
               </button>
             ))}
         </div>
       </header>
       <main className="p-4">
+        
+        {/* TAB: DASHBOARD (Updated with Trends) */}
         {activeTab === 'dashboard' && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -316,6 +302,26 @@ export default function SwingMasterAI({ isPro }) {
                     <div className="text-3xl font-bold text-slate-900">{averages.putts}</div>
                 </div>
             </div>
+            
+            {/* NEW: TRENDS SECTION */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><BarChart3 size={18} className="text-blue-500"/> Performance Trends</h3>
+                <div className="space-y-3">
+                    <div>
+                        <div className="flex justify-between text-xs font-bold mb-1"><span>Driving Accuracy</span><span>42%</span></div>
+                        <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{width: '42%'}}></div></div>
+                    </div>
+                    <div>
+                        <div className="flex justify-between text-xs font-bold mb-1"><span>GIR (Greens)</span><span>38%</span></div>
+                        <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-green-500 h-2 rounded-full" style={{width: '38%'}}></div></div>
+                    </div>
+                    <div>
+                        <div className="flex justify-between text-xs font-bold mb-1"><span>Scrambling</span><span>18%</span></div>
+                        <div className="w-full bg-slate-100 rounded-full h-2"><div className="bg-amber-500 h-2 rounded-full" style={{width: '18%'}}></div></div>
+                    </div>
+                </div>
+            </div>
+
             {rounds.length > 0 && (
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                     <div className="p-3 bg-slate-100 font-bold text-sm text-slate-600">History</div>
@@ -329,6 +335,43 @@ export default function SwingMasterAI({ isPro }) {
             )}
           </div>
         )}
+
+        {/* TAB: LEAGUES (NEW) */}
+        {activeTab === 'leagues' && (
+             <div className="space-y-4">
+                 <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 rounded-2xl text-white shadow-lg">
+                     <h2 className="text-xl font-bold mb-1">Active Leagues</h2>
+                     <p className="text-slate-400 text-sm mb-4">Compete with friends & win prizes.</p>
+                     <button className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm w-full">Create New League</button>
+                 </div>
+                 
+                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                     <div className="p-4 border-b flex justify-between items-center">
+                         <div>
+                             <div className="font-bold text-slate-900">Saturday Skins</div>
+                             <div className="text-xs text-slate-500">12 Members • $50 Pot</div>
+                         </div>
+                         <ChevronRight className="text-slate-400"/>
+                     </div>
+                     <div className="p-4 border-b flex justify-between items-center">
+                         <div>
+                             <div className="font-bold text-slate-900">PGA Fantasy</div>
+                             <div className="text-xs text-slate-500">Weekly Picks • Global</div>
+                         </div>
+                         <ChevronRight className="text-slate-400"/>
+                     </div>
+                 </div>
+                 
+                 {!isPro && (
+                     <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center">
+                         <p className="text-sm text-amber-800 font-bold mb-2">Unlock Unlimited Leagues</p>
+                         <button onClick={handleUpgradeToPro} className="bg-amber-400 text-slate-900 px-4 py-2 rounded-lg font-bold text-sm">Upgrade to Pro</button>
+                     </div>
+                 )}
+             </div>
+        )}
+
+        {/* LOG ROUND */}
         {activeTab === 'rounds' && (
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-md mx-auto">
                 <h2 className="text-xl font-bold mb-4">Log Round</h2>
@@ -345,7 +388,11 @@ export default function SwingMasterAI({ isPro }) {
                 </div>
             </div>
         )}
+
+        {/* GPS TAB */}
         {activeTab === 'gps' && renderGPS()}
+
+        {/* PROFILE TAB */}
         {activeTab === 'profile' && (
           <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
             <h2 className="font-bold text-slate-900 mb-6">Profile</h2>
@@ -376,6 +423,8 @@ export default function SwingMasterAI({ isPro }) {
             <button onClick={() => setActiveTab('dashboard')} className="bg-slate-900 text-white px-6 py-2 rounded font-bold"><Save size={18} className="inline mr-2"/> Save Profile</button>
           </div>
         )}
+
+        {/* AI HUB TAB */}
         {activeTab === 'ai-hub' && (
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 animate-fadeIn">
                 <div className="md:w-1/3 space-y-4">
@@ -386,12 +435,13 @@ export default function SwingMasterAI({ isPro }) {
                         <div className="space-y-3">
                             {[
                                 { id: 'trainer', label: 'Daily Trainer', icon: '🏋️', desc: 'Custom practice routine' },
-                                { id: 'custom', label: 'Skill Builder', icon: '🎯', desc: 'Focus on one area', locked: !isPro }, // NEW MENU ITEM
+                                { id: 'custom', label: 'Skill Builder', icon: '🎯', desc: 'Focus on one area', locked: !isPro },
+                                { id: 'analyzer', label: 'Swing Studio', icon: '📹', desc: 'Record & Analyze', locked: false }, // NEW VIDEO TOOL
                                 { id: 'caddie', label: 'Smart Caddie', icon: '⛳', desc: 'Club & shot advice' },
                                 { id: 'distances', label: 'Bag Mapping', icon: '📏', desc: 'Track your yardages' },
                                 { id: 'fix', label: 'Swing 911', icon: '🚑', desc: 'Emergency fix', locked: !isPro }
                             ].map((tool) => (
-                                <button key={tool.id} onClick={() => { setAiTool(tool.id); setAiResponse(null); }} className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group ${aiTool === tool.id ? 'border-green-500 bg-green-50 shadow-md ring-1 ring-green-500' : 'border-slate-100 hover:border-green-300 hover:bg-slate-50'}`}>
+                                <button key={tool.id} onClick={() => { setAiTool(tool.id); setAiResponse(null); setCameraActive(false); }} className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group ${aiTool === tool.id ? 'border-green-500 bg-green-50 shadow-md ring-1 ring-green-500' : 'border-slate-100 hover:border-green-300 hover:bg-slate-50'}`}>
                                     <div className="flex items-center gap-3"><span className="text-2xl bg-white p-2 rounded-lg shadow-sm border border-slate-100">{tool.icon}</span><div><div className={`font-bold ${aiTool === tool.id ? 'text-green-800' : 'text-slate-700'}`}>{tool.label}</div><div className="text-xs text-slate-400 font-medium">{tool.desc}</div></div></div>
                                     {tool.locked && <Lock size={16} className="text-slate-300 group-hover:text-red-400" />}
                                 </button>
@@ -402,9 +452,37 @@ export default function SwingMasterAI({ isPro }) {
                 <div className="md:w-2/3">
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[500px]">
                         <div className="space-y-6">
+                            
+                            {/* VIDEO ANALYZER (NEW) */}
+                            {aiTool === 'analyzer' && (
+                                <div className="space-y-4">
+                                    <div className="relative bg-black rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center">
+                                        {!cameraActive ? (
+                                            <div className="text-center">
+                                                <Camera className="mx-auto text-slate-500 mb-2" size={48} />
+                                                <p className="text-slate-400 mb-4">Allow camera access to analyze swing</p>
+                                                <button onClick={startCamera} className="bg-blue-600 text-white px-6 py-3 rounded-full font-bold">Start Camera</button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                                                {/* FREE AI OVERLAY GUIDE (Static for now) */}
+                                                <div className="absolute inset-0 pointer-events-none border-2 border-green-500 opacity-50 m-8 rounded-lg"></div>
+                                                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500 opacity-30"></div>
+                                                <div className="absolute bottom-4 left-0 w-full flex justify-center pointer-events-auto">
+                                                    <button onClick={stopCamera} className="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg">Stop</button>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600">
+                                        <strong>💡 Tip:</strong> Align your hips with the red line. Keep your head inside the green box.
+                                    </div>
+                                </div>
+                            )}
+
                             {aiTool === 'trainer' && <button onClick={generateDataDrivenPlan} disabled={loadingAI} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2">{loadingAI ? "Analyzing Stats..." : "Generate Today's Plan"} {!loadingAI && <Sparkles size={18}/>}</button>}
                             
-                            {/* --- NEW CUSTOM PRACTICE SECTION --- */}
                             {aiTool === 'custom' && (
                                 !isPro ? (
                                     <div className="text-center py-10 px-6 bg-slate-50 rounded-xl border border-dashed border-slate-300">
@@ -417,13 +495,7 @@ export default function SwingMasterAI({ isPro }) {
                                     <div className="space-y-4">
                                         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Target className="text-blue-500"/> Skill Builder</h2>
                                         <p className="text-sm text-slate-500">What do you want to work on today?</p>
-                                        <input 
-                                            type="text" 
-                                            value={customPracticeInput}
-                                            onChange={(e) => setCustomPracticeInput(e.target.value)}
-                                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
-                                            placeholder="e.g. Short Game, Bunker Shots, Lag Putting..." 
-                                        />
+                                        <input type="text" value={customPracticeInput} onChange={(e) => setCustomPracticeInput(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Short Game, Bunker Shots, Lag Putting..." />
                                         <button onClick={generateCustomPractice} disabled={loadingAI || !customPracticeInput} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2">
                                             {loadingAI ? "Building Plan..." : "Get Drills"} {!loadingAI && <Dumbbell size={18}/>}
                                         </button>
