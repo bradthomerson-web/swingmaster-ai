@@ -3,11 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, 
   Navigation, Zap, Lock, CreditCard, Locate, Stethoscope, Dumbbell, Video, 
-  Users, BarChart3, ChevronRight, ChevronLeft, Camera, X 
+  Users, BarChart3, ChevronRight, ChevronLeft, Camera, X, Activity 
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import UpgradeModal from './UpgradeModal'; 
+// 📦 NEW: Import MediaPipe for AI Vision
+import { FilesetResolver, PoseLandmarker, DrawingUtils } from "@mediapipe/tasks-vision";
 
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
 
@@ -39,7 +41,7 @@ export default function SwingMasterAI({ isPro }) {
 
   // --- LEAGUE STATE ---
   const [showLeagueModal, setShowLeagueModal] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState(null); // NEW: Track selected league
+  const [selectedLeague, setSelectedLeague] = useState(null);
   const [newLeague, setNewLeague] = useState({ name: '', pot: '', members: '1' });
   const [leagues, setLeagues] = useState([
     { id: 1, name: 'Saturday Skins', members: 12, pot: '$50', rank: 4, score: '+2' },
@@ -62,9 +64,14 @@ export default function SwingMasterAI({ isPro }) {
   const [shotHistory, setShotHistory] = useState([]); 
   const [selectedClub, setSelectedClub] = useState('Driver');
   
-  // --- VIDEO STATE ---
+  // --- VIDEO & MEDIAPIPE STATE (NEW) ---
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [poseLandmarker, setPoseLandmarker] = useState(null);
+  const [aiFeedback, setAiFeedback] = useState("Align yourself in frame...");
+  const requestRef = useRef(null);
+  const baselineHeadX = useRef(null); // To track head sway
 
   const handleUpgradeToPro = () => window.location.href = STRIPE_CHECKOUT_URL;
 
@@ -192,12 +199,37 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
-  // --- VIDEO LOGIC ---
+  // --- VIDEO & AI ANALYSIS LOGIC ---
+  
+  // 1. Initialize AI Model
+  useEffect(() => {
+    const createPoseLandmarker = async () => {
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+      );
+      const landmarker = await PoseLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numPoses: 1
+      });
+      setPoseLandmarker(landmarker);
+    };
+    createPoseLandmarker();
+  }, []);
+
+  // 2. Start Camera & Analysis Loop
   const startCamera = async () => {
     setCameraActive(true);
+    baselineHeadX.current = null; // Reset baseline
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-      if (videoRef.current) videoRef.current.srcObject = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.addEventListener("loadeddata", predictWebcam);
+      }
     } catch (err) { console.error("Camera Error", err); }
   };
 
@@ -205,6 +237,66 @@ export default function SwingMasterAI({ isPro }) {
     setCameraActive(false);
     if (videoRef.current && videoRef.current.srcObject) {
       videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+    }
+    if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+    }
+  };
+
+  // 3. The "Brain": Analyze the Frame
+  const predictWebcam = () => {
+    if (!poseLandmarker || !videoRef.current || !canvasRef.current) return;
+    
+    let startTimeMs = performance.now();
+    
+    // Detect Body
+    const results = poseLandmarker.detectForVideo(videoRef.current, startTimeMs);
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const video = videoRef.current;
+
+    // Match canvas size to video size
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (results.landmarks && results.landmarks.length > 0) {
+      const drawingUtils = new DrawingUtils(ctx);
+      
+      // Draw Skeleton
+      for (const landmark of results.landmarks) {
+        drawingUtils.drawLandmarks(landmark, { radius: 3, color: "#00FF00" });
+        drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#FFFFFF", lineWidth: 2 });
+        
+        // --- REAL-TIME ANALYSIS ---
+        const nose = landmark[0]; // Nose is index 0
+        
+        // Set Baseline (Address Position)
+        if (baselineHeadX.current === null) {
+            baselineHeadX.current = nose.x;
+            setAiFeedback("✅ Tracking Active. Swing away!");
+        } else {
+            // Calculate Sway (Difference from baseline)
+            const sway = nose.x - baselineHeadX.current;
+            
+            // Threshold: If nose moves > 5% of screen width
+            if (Math.abs(sway) > 0.05) {
+                setAiFeedback(sway > 0 ? "⚠️ HEAD SWAY: LEFT" : "⚠️ HEAD SWAY: RIGHT");
+                // Draw Warning Box
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 5;
+                ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            } else {
+                setAiFeedback("✅ Good Head Stability");
+            }
+        }
+      }
+    }
+    
+    if(cameraActive) {
+        requestRef.current = requestAnimationFrame(predictWebcam);
     }
   };
 
@@ -409,7 +501,7 @@ export default function SwingMasterAI({ isPro }) {
              </div>
         )}
 
-        {/* TAB: LEAGUE DETAIL VIEW (NEW) */}
+        {/* TAB: LEAGUE DETAIL VIEW */}
         {activeTab === 'league-detail' && selectedLeague && (
             <div className="space-y-4 animate-fadeIn">
                 <button onClick={() => setActiveTab('leagues')} className="text-slate-500 font-bold text-sm flex items-center gap-1 mb-2 hover:text-slate-800 transition-colors">
@@ -533,7 +625,7 @@ export default function SwingMasterAI({ isPro }) {
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[500px]">
                         <div className="space-y-6">
                             
-                            {/* VIDEO ANALYZER */}
+                            {/* VIDEO ANALYZER (UPDATED WITH AI) */}
                             {aiTool === 'analyzer' && (
                                 <div className="space-y-4">
                                     <div className="relative bg-black rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center">
@@ -545,10 +637,20 @@ export default function SwingMasterAI({ isPro }) {
                                             </div>
                                         ) : (
                                             <>
-                                                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                                                {/* FREE AI OVERLAY GUIDE (Static for now) */}
-                                                <div className="absolute inset-0 pointer-events-none border-2 border-green-500 opacity-50 m-8 rounded-lg"></div>
-                                                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-red-500 opacity-30"></div>
+                                                {/* VIDEO FEED */}
+                                                <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+                                                
+                                                {/* AI OVERLAY CANVAS */}
+                                                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+                                                
+                                                {/* FEEDBACK OVERLAY */}
+                                                <div className="absolute top-4 left-4 bg-black/70 text-white px-4 py-2 rounded-lg backdrop-blur-sm">
+                                                    <div className="flex items-center gap-2">
+                                                        <Activity className="text-green-400" size={16} />
+                                                        <span className="font-bold text-sm">{aiFeedback}</span>
+                                                    </div>
+                                                </div>
+
                                                 <div className="absolute bottom-4 left-0 w-full flex justify-center pointer-events-auto">
                                                     <button onClick={stopCamera} className="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg">Stop</button>
                                                 </div>
@@ -556,7 +658,7 @@ export default function SwingMasterAI({ isPro }) {
                                         )}
                                     </div>
                                     <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600">
-                                        <strong>💡 Tip:</strong> Align your hips with the red line. Keep your head inside the green box.
+                                        <strong>💡 How it works:</strong> The AI tracks your nose position. If it moves too far left or right during your swing, it alerts you to "Swaying."
                                     </div>
                                 </div>
                             )}
