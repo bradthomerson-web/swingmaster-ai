@@ -10,8 +10,8 @@ const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00";
 // 🛠️ API KEY: Grab from .env file
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
-// 🛠️ FIX: Use 'gemini-1.5-flash' on 'v1beta' (The most reliable free model)
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+// 🛠️ FIX: Use specific version 'gemini-1.5-flash-001' to avoid "Not Found" errors
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent";
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
@@ -40,7 +40,7 @@ export default function SwingMasterAI({ isPro }) {
   const [aiResponse, setAiResponse] = useState(null);
   const [caddieData, setCaddieData] = useState({ distance: '', wind: 'calm', lie: 'fairway' });
   const [fixInput, setFixInput] = useState('');
-  const [customPracticeInput, setCustomPracticeInput] = useState(''); // NEW STATE
+  const [customPracticeInput, setCustomPracticeInput] = useState('');
 
   // --- GPS STATE ---
   const [gpsActive, setGpsActive] = useState(false);
@@ -224,18 +224,15 @@ export default function SwingMasterAI({ isPro }) {
     callGemini(prompt);
   };
 
-  // 4. Custom Practice (NEW - Pro Only)
+  // 4. Custom Practice (Pro Only)
   const generateCustomPractice = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!customPracticeInput) return;
     const prompt = `
         Act as a PGA Coach. I want to work specifically on: "${customPracticeInput}".
-        
         Create a focused practice session with 3 specific drills.
-        
         For EVERY drill, you MUST provide a YouTube Search link in this format:
         [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
-        
         Format with clear headings. Keep it concise.
     `;
     callGemini(prompt);
