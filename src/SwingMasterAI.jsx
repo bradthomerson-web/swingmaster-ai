@@ -8,7 +8,6 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import UpgradeModal from './UpgradeModal'; 
-// 📦 NEW: Import MediaPipe for AI Vision
 import { FilesetResolver, PoseLandmarker, DrawingUtils } from "@mediapipe/tasks-vision";
 
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
@@ -64,14 +63,14 @@ export default function SwingMasterAI({ isPro }) {
   const [shotHistory, setShotHistory] = useState([]); 
   const [selectedClub, setSelectedClub] = useState('Driver');
   
-  // --- VIDEO & MEDIAPIPE STATE (NEW) ---
+  // --- VIDEO & MEDIAPIPE STATE ---
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [poseLandmarker, setPoseLandmarker] = useState(null);
   const [aiFeedback, setAiFeedback] = useState("Align yourself in frame...");
   const requestRef = useRef(null);
-  const baselineHeadX = useRef(null); // To track head sway
+  const baselineHeadX = useRef(null);
 
   const handleUpgradeToPro = () => window.location.href = STRIPE_CHECKOUT_URL;
 
@@ -200,8 +199,6 @@ export default function SwingMasterAI({ isPro }) {
   }, [gpsActive, startCoords]);
 
   // --- VIDEO & AI ANALYSIS LOGIC ---
-  
-  // 1. Initialize AI Model
   useEffect(() => {
     const createPoseLandmarker = async () => {
       const vision = await FilesetResolver.forVisionTasks(
@@ -220,10 +217,9 @@ export default function SwingMasterAI({ isPro }) {
     createPoseLandmarker();
   }, []);
 
-  // 2. Start Camera & Analysis Loop
   const startCamera = async () => {
     setCameraActive(true);
-    baselineHeadX.current = null; // Reset baseline
+    baselineHeadX.current = null;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       if (videoRef.current) {
@@ -243,20 +239,15 @@ export default function SwingMasterAI({ isPro }) {
     }
   };
 
-  // 3. The "Brain": Analyze the Frame
   const predictWebcam = () => {
     if (!poseLandmarker || !videoRef.current || !canvasRef.current) return;
     
     let startTimeMs = performance.now();
-    
-    // Detect Body
     const results = poseLandmarker.detectForVideo(videoRef.current, startTimeMs);
-    
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const video = videoRef.current;
 
-    // Match canvas size to video size
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -264,27 +255,18 @@ export default function SwingMasterAI({ isPro }) {
 
     if (results.landmarks && results.landmarks.length > 0) {
       const drawingUtils = new DrawingUtils(ctx);
-      
-      // Draw Skeleton
       for (const landmark of results.landmarks) {
         drawingUtils.drawLandmarks(landmark, { radius: 3, color: "#00FF00" });
         drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS, { color: "#FFFFFF", lineWidth: 2 });
         
-        // --- REAL-TIME ANALYSIS ---
-        const nose = landmark[0]; // Nose is index 0
-        
-        // Set Baseline (Address Position)
+        const nose = landmark[0];
         if (baselineHeadX.current === null) {
             baselineHeadX.current = nose.x;
             setAiFeedback("✅ Tracking Active. Swing away!");
         } else {
-            // Calculate Sway (Difference from baseline)
             const sway = nose.x - baselineHeadX.current;
-            
-            // Threshold: If nose moves > 5% of screen width
             if (Math.abs(sway) > 0.05) {
                 setAiFeedback(sway > 0 ? "⚠️ HEAD SWAY: LEFT" : "⚠️ HEAD SWAY: RIGHT");
-                // Draw Warning Box
                 ctx.strokeStyle = "red";
                 ctx.lineWidth = 5;
                 ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
@@ -294,7 +276,6 @@ export default function SwingMasterAI({ isPro }) {
         }
       }
     }
-    
     if(cameraActive) {
         requestRef.current = requestAnimationFrame(predictWebcam);
     }
@@ -608,7 +589,7 @@ export default function SwingMasterAI({ isPro }) {
                             {[
                                 { id: 'trainer', label: 'Daily Trainer', icon: '🏋️', desc: 'Custom practice routine' },
                                 { id: 'custom', label: 'Skill Builder', icon: '🎯', desc: 'Focus on one area', locked: !isPro },
-                                { id: 'analyzer', label: 'Swing Studio', icon: '📹', desc: 'Record & Analyze', locked: false },
+                                { id: 'analyzer', label: 'Swing Studio', icon: '📹', desc: 'Record & Analyze', locked: !isPro }, // LOCKED FOR FREE USERS
                                 { id: 'caddie', label: 'Smart Caddie', icon: '⛳', desc: 'Club & shot advice' },
                                 { id: 'distances', label: 'Bag Mapping', icon: '📏', desc: 'Track your yardages' },
                                 { id: 'fix', label: 'Swing 911', icon: '🚑', desc: 'Emergency fix', locked: !isPro }
@@ -625,42 +606,45 @@ export default function SwingMasterAI({ isPro }) {
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[500px]">
                         <div className="space-y-6">
                             
-                            {/* VIDEO ANALYZER (UPDATED WITH AI) */}
+                            {/* VIDEO ANALYZER (LOCKED) */}
                             {aiTool === 'analyzer' && (
-                                <div className="space-y-4">
-                                    <div className="relative bg-black rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center">
-                                        {!cameraActive ? (
-                                            <div className="text-center">
-                                                <Camera className="mx-auto text-slate-500 mb-2" size={48} />
-                                                <p className="text-slate-400 mb-4">Allow camera access to analyze swing</p>
-                                                <button onClick={startCamera} className="bg-blue-600 text-white px-6 py-3 rounded-full font-bold">Start Camera</button>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                {/* VIDEO FEED */}
-                                                <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
-                                                
-                                                {/* AI OVERLAY CANVAS */}
-                                                <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
-                                                
-                                                {/* FEEDBACK OVERLAY */}
-                                                <div className="absolute top-4 left-4 bg-black/70 text-white px-4 py-2 rounded-lg backdrop-blur-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <Activity className="text-green-400" size={16} />
-                                                        <span className="font-bold text-sm">{aiFeedback}</span>
+                                !isPro ? (
+                                    <div className="text-center py-10 px-6 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                                        <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4"><Lock size={32}/></div>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Pro Access Only</h3>
+                                        <p className="text-slate-500 mb-6">Unlock real-time AI Swing Analysis.</p>
+                                        <button onClick={handleUpgradeToPro} className="bg-amber-400 hover:bg-amber-300 text-slate-900 px-8 py-3 rounded-full font-bold">Unlock for $49</button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="relative bg-black rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center">
+                                            {!cameraActive ? (
+                                                <div className="text-center">
+                                                    <Camera className="mx-auto text-slate-500 mb-2" size={48} />
+                                                    <p className="text-slate-400 mb-4">Allow camera access to analyze swing</p>
+                                                    <button onClick={startCamera} className="bg-blue-600 text-white px-6 py-3 rounded-full font-bold">Start Camera</button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+                                                    <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+                                                    <div className="absolute top-4 left-4 bg-black/70 text-white px-4 py-2 rounded-lg backdrop-blur-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <Activity className="text-green-400" size={16} />
+                                                            <span className="font-bold text-sm">{aiFeedback}</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-
-                                                <div className="absolute bottom-4 left-0 w-full flex justify-center pointer-events-auto">
-                                                    <button onClick={stopCamera} className="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg">Stop</button>
-                                                </div>
-                                            </>
-                                        )}
+                                                    <div className="absolute bottom-4 left-0 w-full flex justify-center pointer-events-auto">
+                                                        <button onClick={stopCamera} className="bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg">Stop</button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600">
+                                            <strong>💡 How it works:</strong> The AI tracks your nose position. If it moves too far left or right during your swing, it alerts you to "Swaying."
+                                        </div>
                                     </div>
-                                    <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600">
-                                        <strong>💡 How it works:</strong> The AI tracks your nose position. If it moves too far left or right during your swing, it alerts you to "Swaying."
-                                    </div>
-                                </div>
+                                )
                             )}
 
                             {aiTool === 'trainer' && <button onClick={generateDataDrivenPlan} disabled={loadingAI} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2">{loadingAI ? "Analyzing Stats..." : "Generate Today's Plan"} {!loadingAI && <Sparkles size={18}/>}</button>}
