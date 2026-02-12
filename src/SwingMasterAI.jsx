@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, 
   Navigation, Zap, Lock, CreditCard, Locate, Stethoscope, Dumbbell, Video, 
-  Users, BarChart3, ChevronRight, Camera, X 
+  Users, BarChart3, ChevronRight, ChevronLeft, Camera, X 
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -39,10 +39,11 @@ export default function SwingMasterAI({ isPro }) {
 
   // --- LEAGUE STATE ---
   const [showLeagueModal, setShowLeagueModal] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState(null); // NEW: Track selected league
   const [newLeague, setNewLeague] = useState({ name: '', pot: '', members: '1' });
   const [leagues, setLeagues] = useState([
-    { id: 1, name: 'Saturday Skins', members: 12, pot: '$50' },
-    { id: 2, name: 'PGA Fantasy', members: 850, pot: 'Global' }
+    { id: 1, name: 'Saturday Skins', members: 12, pot: '$50', rank: 4, score: '+2' },
+    { id: 2, name: 'PGA Fantasy', members: 850, pot: 'Global', rank: 142, score: '885 pts' }
   ]);
 
   // --- AI STATE ---
@@ -119,11 +120,18 @@ export default function SwingMasterAI({ isPro }) {
         id: Date.now(), 
         name: newLeague.name, 
         pot: newLeague.pot || '$0', 
-        members: 1 
+        members: 1,
+        rank: 1,
+        score: 'E'
     };
     setLeagues([...leagues, newEntry]);
     setNewLeague({ name: '', pot: '', members: '1' });
     setShowLeagueModal(false);
+  };
+
+  const handleLeagueClick = (league) => {
+    setSelectedLeague(league);
+    setActiveTab('league-detail');
   };
 
   const handleEquipmentChange = (item, isChecked) => {
@@ -362,7 +370,7 @@ export default function SwingMasterAI({ isPro }) {
           </div>
         )}
 
-        {/* TAB: LEAGUES */}
+        {/* TAB: LEAGUES LIST */}
         {activeTab === 'leagues' && (
              <div className="space-y-4">
                  <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 rounded-2xl text-white shadow-lg">
@@ -378,13 +386,17 @@ export default function SwingMasterAI({ isPro }) {
                  
                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                      {leagues.map((league) => (
-                        <div key={league.id} className="p-4 border-b last:border-0 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                        <button 
+                            key={league.id} 
+                            onClick={() => handleLeagueClick(league)}
+                            className="w-full text-left p-4 border-b last:border-0 flex justify-between items-center hover:bg-slate-50 transition-colors"
+                        >
                             <div>
                                 <div className="font-bold text-slate-900">{league.name}</div>
                                 <div className="text-xs text-slate-500">{league.members} Members • Pot: {league.pot}</div>
                             </div>
                             <ChevronRight className="text-slate-400"/>
-                        </div>
+                        </button>
                      ))}
                  </div>
                  
@@ -395,6 +407,48 @@ export default function SwingMasterAI({ isPro }) {
                      </div>
                  )}
              </div>
+        )}
+
+        {/* TAB: LEAGUE DETAIL VIEW (NEW) */}
+        {activeTab === 'league-detail' && selectedLeague && (
+            <div className="space-y-4 animate-fadeIn">
+                <button onClick={() => setActiveTab('leagues')} className="text-slate-500 font-bold text-sm flex items-center gap-1 mb-2 hover:text-slate-800 transition-colors">
+                    <ChevronLeft size={18}/> Back to Leagues
+                </button>
+                
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div className="flex justify-between items-start mb-6 border-b pb-4">
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-900">{selectedLeague.name}</h2>
+                            <p className="text-slate-500 text-sm">Pot: <span className="text-green-600 font-bold">{selectedLeague.pot}</span> • {selectedLeague.members} Players</p>
+                        </div>
+                        <div className="bg-slate-100 p-2 rounded-lg text-center min-w-[60px]">
+                            <div className="text-xs text-slate-500 uppercase font-bold">My Rank</div>
+                            <div className="text-xl font-bold text-slate-900">#{selectedLeague.rank}</div>
+                        </div>
+                    </div>
+
+                    <h3 className="font-bold text-slate-800 mb-3 text-sm uppercase flex items-center gap-2"><Trophy size={14} className="text-amber-500"/> Leaderboard</h3>
+                    <div className="space-y-2">
+                        {/* Dummy Leaderboard Data for Demo */}
+                        {[1, 2, 3, selectedLeague.rank, 5].sort((a,b) => a-b).map((rank, i) => (
+                            <div key={rank} className={`flex justify-between items-center p-3 rounded-lg ${rank === selectedLeague.rank ? 'bg-blue-50 border border-blue-100' : 'bg-slate-50'}`}>
+                                <div className="flex items-center gap-3">
+                                    <span className={`font-bold w-6 text-center ${rank === 1 ? 'text-amber-500' : 'text-slate-400'}`}>{rank}</span>
+                                    <div className="flex flex-col">
+                                        <span className={`font-bold text-sm ${rank === selectedLeague.rank ? 'text-blue-700' : 'text-slate-700'}`}>
+                                            {rank === selectedLeague.rank ? (userProfile.name || 'You') : `Player ${Math.floor(Math.random() * 100)}`}
+                                        </span>
+                                    </div>
+                                </div>
+                                <span className={`font-bold ${rank === 1 ? 'text-green-600' : 'text-slate-900'}`}>
+                                    {rank === selectedLeague.rank ? selectedLeague.score : (rank === 1 ? '-4' : rank === 2 ? '-2' : rank === 3 ? 'E' : '+3')}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
         )}
 
         {/* LOG ROUND */}
@@ -554,7 +608,7 @@ export default function SwingMasterAI({ isPro }) {
         )}
       </main>
 
-      {/* --- LEAGUE CREATION MODAL (FIXED) --- */}
+      {/* --- LEAGUE CREATION MODAL --- */}
       {showLeagueModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
