@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, 
   Navigation, Zap, Lock, CreditCard, Locate, Stethoscope, Dumbbell, Video, 
-  Users, BarChart3, ChevronRight, Camera 
+  Users, BarChart3, ChevronRight, Camera, X 
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +12,8 @@ import UpgradeModal from './UpgradeModal';
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
+
+// 🛠️ PERMANENT FIX: Locked to Gemini 2.5 Flash
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 const STANDARD_CLUBS = [
@@ -34,6 +36,14 @@ export default function SwingMasterAI({ isPro }) {
   const [newRound, setNewRound] = useState({ date: '', course: '', score: '', putts: '', fairways: '', gir: '' });
   const [newDistanceEntry, setNewDistanceEntry] = useState({ club: '', carry: '', total: '' });
   const [clubDistances, setClubDistances] = useState([]);
+
+  // --- LEAGUE STATE ---
+  const [showLeagueModal, setShowLeagueModal] = useState(false);
+  const [newLeague, setNewLeague] = useState({ name: '', pot: '', members: '1' });
+  const [leagues, setLeagues] = useState([
+    { id: 1, name: 'Saturday Skins', members: 12, pot: '$50' },
+    { id: 2, name: 'PGA Fantasy', members: 850, pot: 'Global' }
+  ]);
 
   // --- AI STATE ---
   const [aiTool, setAiTool] = useState('trainer');
@@ -63,9 +73,12 @@ export default function SwingMasterAI({ isPro }) {
       const savedRounds = localStorage.getItem('swingmaster_rounds');
       const savedProfile = localStorage.getItem('swingmaster_profile');
       const savedDistances = localStorage.getItem('swingmaster_club_distances');
+      const savedLeagues = localStorage.getItem('swingmaster_leagues');
+      
       if (savedRounds) setRounds(JSON.parse(savedRounds));
       if (savedProfile) setUserProfile(JSON.parse(savedProfile));
       if (savedDistances) setClubDistances(JSON.parse(savedDistances));
+      if (savedLeagues) setLeagues(JSON.parse(savedLeagues));
     } catch (err) { console.error(err); }
   }, []);
 
@@ -73,6 +86,7 @@ export default function SwingMasterAI({ isPro }) {
   useEffect(() => localStorage.setItem('swingmaster_rounds', JSON.stringify(rounds)), [rounds]);
   useEffect(() => localStorage.setItem('swingmaster_profile', JSON.stringify(userProfile)), [userProfile]);
   useEffect(() => localStorage.setItem('swingmaster_club_distances', JSON.stringify(clubDistances)), [clubDistances]);
+  useEffect(() => localStorage.setItem('swingmaster_leagues', JSON.stringify(leagues)), [leagues]);
 
   // --- HELPERS ---
   const getAverages = () => {
@@ -97,6 +111,19 @@ export default function SwingMasterAI({ isPro }) {
     setRounds([{...newRound, id: Date.now()}, ...rounds]);
     setNewRound({ date: '', course: '', score: '', putts: '', fairways: '', gir: '' });
     setActiveTab('dashboard');
+  };
+
+  const handleCreateLeague = () => {
+    if (!newLeague.name) return;
+    const newEntry = { 
+        id: Date.now(), 
+        name: newLeague.name, 
+        pot: newLeague.pot || '$0', 
+        members: 1 
+    };
+    setLeagues([...leagues, newEntry]);
+    setNewLeague({ name: '', pot: '', members: '1' });
+    setShowLeagueModal(false);
   };
 
   const handleEquipmentChange = (item, isChecked) => {
@@ -157,7 +184,7 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
-  // --- VIDEO LOGIC (FREE) ---
+  // --- VIDEO LOGIC ---
   const startCamera = async () => {
     setCameraActive(true);
     try {
@@ -173,7 +200,7 @@ export default function SwingMasterAI({ isPro }) {
     }
   };
 
-  // --- AI LOGIC ---
+  // --- AI LOGIC (LOCKED TO 2.5) ---
   const callGemini = async (prompt) => {
     if (!apiKey) {
         alert("Missing API Key! Make sure VITE_GEMINI_API_KEY is in your .env file.");
@@ -274,7 +301,7 @@ export default function SwingMasterAI({ isPro }) {
         <div className="flex justify-around bg-slate-800 p-2 overflow-x-auto">
             {[
               { id: 'dashboard', icon: Trophy, label: 'Stats' },
-              { id: 'leagues', icon: Users, label: 'Leagues' }, // NEW
+              { id: 'leagues', icon: Users, label: 'Leagues' }, 
               { id: 'rounds', icon: Calendar, label: 'Log' },
               { id: 'gps', icon: Navigation, label: 'GPS' },
               { id: 'profile', icon: User, label: 'Profile' },
@@ -289,7 +316,7 @@ export default function SwingMasterAI({ isPro }) {
       </header>
       <main className="p-4">
         
-        {/* TAB: DASHBOARD (Updated with Trends) */}
+        {/* TAB: DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -303,7 +330,6 @@ export default function SwingMasterAI({ isPro }) {
                 </div>
             </div>
             
-            {/* NEW: TRENDS SECTION */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
                 <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><BarChart3 size={18} className="text-blue-500"/> Performance Trends</h3>
                 <div className="space-y-3">
@@ -336,30 +362,30 @@ export default function SwingMasterAI({ isPro }) {
           </div>
         )}
 
-        {/* TAB: LEAGUES (NEW) */}
+        {/* TAB: LEAGUES */}
         {activeTab === 'leagues' && (
              <div className="space-y-4">
                  <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-6 rounded-2xl text-white shadow-lg">
                      <h2 className="text-xl font-bold mb-1">Active Leagues</h2>
                      <p className="text-slate-400 text-sm mb-4">Compete with friends & win prizes.</p>
-                     <button className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm w-full">Create New League</button>
+                     <button 
+                        onClick={() => setShowLeagueModal(true)}
+                        className="bg-green-500 text-white px-4 py-2 rounded-lg font-bold text-sm w-full hover:bg-green-400 transition-colors"
+                     >
+                        Create New League
+                     </button>
                  </div>
                  
                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                     <div className="p-4 border-b flex justify-between items-center">
-                         <div>
-                             <div className="font-bold text-slate-900">Saturday Skins</div>
-                             <div className="text-xs text-slate-500">12 Members • $50 Pot</div>
-                         </div>
-                         <ChevronRight className="text-slate-400"/>
-                     </div>
-                     <div className="p-4 border-b flex justify-between items-center">
-                         <div>
-                             <div className="font-bold text-slate-900">PGA Fantasy</div>
-                             <div className="text-xs text-slate-500">Weekly Picks • Global</div>
-                         </div>
-                         <ChevronRight className="text-slate-400"/>
-                     </div>
+                     {leagues.map((league) => (
+                        <div key={league.id} className="p-4 border-b last:border-0 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                            <div>
+                                <div className="font-bold text-slate-900">{league.name}</div>
+                                <div className="text-xs text-slate-500">{league.members} Members • Pot: {league.pot}</div>
+                            </div>
+                            <ChevronRight className="text-slate-400"/>
+                        </div>
+                     ))}
                  </div>
                  
                  {!isPro && (
@@ -436,7 +462,7 @@ export default function SwingMasterAI({ isPro }) {
                             {[
                                 { id: 'trainer', label: 'Daily Trainer', icon: '🏋️', desc: 'Custom practice routine' },
                                 { id: 'custom', label: 'Skill Builder', icon: '🎯', desc: 'Focus on one area', locked: !isPro },
-                                { id: 'analyzer', label: 'Swing Studio', icon: '📹', desc: 'Record & Analyze', locked: false }, // NEW VIDEO TOOL
+                                { id: 'analyzer', label: 'Swing Studio', icon: '📹', desc: 'Record & Analyze', locked: false },
                                 { id: 'caddie', label: 'Smart Caddie', icon: '⛳', desc: 'Club & shot advice' },
                                 { id: 'distances', label: 'Bag Mapping', icon: '📏', desc: 'Track your yardages' },
                                 { id: 'fix', label: 'Swing 911', icon: '🚑', desc: 'Emergency fix', locked: !isPro }
@@ -453,7 +479,7 @@ export default function SwingMasterAI({ isPro }) {
                     <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm min-h-[500px]">
                         <div className="space-y-6">
                             
-                            {/* VIDEO ANALYZER (NEW) */}
+                            {/* VIDEO ANALYZER */}
                             {aiTool === 'analyzer' && (
                                 <div className="space-y-4">
                                     <div className="relative bg-black rounded-xl overflow-hidden aspect-[3/4] flex items-center justify-center">
@@ -527,6 +553,28 @@ export default function SwingMasterAI({ isPro }) {
             </div>
         )}
       </main>
+
+      {/* --- LEAGUE CREATION MODAL (FIXED) --- */}
+      {showLeagueModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
+                <button onClick={() => setShowLeagueModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><X size={24}/></button>
+                <h3 className="text-xl font-bold text-slate-900 mb-4">Create New League</h3>
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">League Name</label>
+                        <input type="text" className="w-full p-3 border rounded-xl" placeholder="e.g. Sunday Skins" value={newLeague.name} onChange={e => setNewLeague({...newLeague, name: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Buy-In / Pot</label>
+                        <input type="text" className="w-full p-3 border rounded-xl" placeholder="e.g. $20" value={newLeague.pot} onChange={e => setNewLeague({...newLeague, pot: e.target.value})} />
+                    </div>
+                    <button onClick={handleCreateLeague} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Create League</button>
+                </div>
+            </div>
+        </div>
+      )}
+
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} onUpgrade={handleUpgradeToPro} />
     </div>
   );
