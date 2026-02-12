@@ -10,8 +10,9 @@ const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00";
 // 🛠️ API KEY: Grab from .env file
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
-// 🛠️ FIX: Use specific version 'gemini-1.5-flash-001' to avoid "Not Found" errors
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent";
+// 🛠️ FIX: Switching to 'gemini-1.5-pro' 
+// This is the stable, high-intelligence model. It has a free tier (2 requests/min).
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
