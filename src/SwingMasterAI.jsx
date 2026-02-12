@@ -1,6 +1,6 @@
 // src/SwingMasterAI.jsx
 import React, { useState, useEffect } from 'react';
-import { MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, Navigation, Zap, Lock, CreditCard, Locate, Stethoscope } from 'lucide-react';
+import { MapPin, Sparkles, Plus, TrendingUp, Trophy, Calendar, Target, User, Save, Navigation, Zap, Lock, CreditCard, Locate, Stethoscope, Dumbbell } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import UpgradeModal from './UpgradeModal'; 
@@ -10,9 +10,8 @@ const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00";
 // 🛠️ API KEY: Grab from .env file
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
-// 🛠️ FIX: Update to Gemini 2.5 Flash (Current Active Model)
-// If you get a "Quota" error, try 'gemini-2.5-flash-lite'
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+// 🛠️ FIX: Use 'gemini-1.5-flash' on 'v1beta' (The most reliable free model)
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 const STANDARD_CLUBS = [
   'Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', 
@@ -41,6 +40,7 @@ export default function SwingMasterAI({ isPro }) {
   const [aiResponse, setAiResponse] = useState(null);
   const [caddieData, setCaddieData] = useState({ distance: '', wind: 'calm', lie: 'fairway' });
   const [fixInput, setFixInput] = useState('');
+  const [customPracticeInput, setCustomPracticeInput] = useState(''); // NEW STATE
 
   // --- GPS STATE ---
   const [gpsActive, setGpsActive] = useState(false);
@@ -152,7 +152,7 @@ export default function SwingMasterAI({ isPro }) {
     return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
   }, [gpsActive, startCoords]);
 
-  // --- AI LOGIC (Updated for 2.5 Flash) ---
+  // --- AI LOGIC ---
   const callGemini = async (prompt) => {
     if (!apiKey) {
         alert("Missing API Key! Make sure VITE_GEMINI_API_KEY is in your .env file.");
@@ -168,7 +168,6 @@ export default function SwingMasterAI({ isPro }) {
       });
       const data = await response.json();
       
-      // Check for API errors
       if (data.error) throw new Error(data.error.message);
       
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -180,6 +179,7 @@ export default function SwingMasterAI({ isPro }) {
     }
   };
 
+  // 1. Daily Trainer
   const generateDataDrivenPlan = () => {
     const prompt = `
       Act as a PGA Coach. Create a 45-minute practice plan.
@@ -193,12 +193,13 @@ export default function SwingMasterAI({ isPro }) {
     callGemini(prompt);
   };
 
+  // 2. Smart Caddie
   const generateCaddieAdvice = () => {
     const prompt = `Act as a Tour Caddie. Shot: ${caddieData.distance} yards, Wind: ${caddieData.wind}, Lie: ${caddieData.lie}. Recommendation?`;
     callGemini(prompt);
   };
 
-  // --- UPDATED: Swing 911 (Text Explanation) ---
+  // 3. Swing 911 (Emergency)
   const generateQuickFix = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
     if(!fixInput) return;
@@ -219,6 +220,23 @@ export default function SwingMasterAI({ isPro }) {
         (Name of drill)
         (Brief explanation of how to perform the drill)
         Keep it concise.
+    `;
+    callGemini(prompt);
+  };
+
+  // 4. Custom Practice (NEW - Pro Only)
+  const generateCustomPractice = () => {
+    if(!isPro) { setShowUpgradeModal(true); return; }
+    if(!customPracticeInput) return;
+    const prompt = `
+        Act as a PGA Coach. I want to work specifically on: "${customPracticeInput}".
+        
+        Create a focused practice session with 3 specific drills.
+        
+        For EVERY drill, you MUST provide a YouTube Search link in this format:
+        [▶️ Watch Drill Demo](https://www.youtube.com/results?search_query=NAME_OF_DRILL_HERE+golf+drill)
+        
+        Format with clear headings. Keep it concise.
     `;
     callGemini(prompt);
   };
@@ -371,6 +389,7 @@ export default function SwingMasterAI({ isPro }) {
                         <div className="space-y-3">
                             {[
                                 { id: 'trainer', label: 'Daily Trainer', icon: '🏋️', desc: 'Custom practice routine' },
+                                { id: 'custom', label: 'Skill Builder', icon: '🎯', desc: 'Focus on one area', locked: !isPro }, // NEW MENU ITEM
                                 { id: 'caddie', label: 'Smart Caddie', icon: '⛳', desc: 'Club & shot advice' },
                                 { id: 'distances', label: 'Bag Mapping', icon: '📏', desc: 'Track your yardages' },
                                 { id: 'fix', label: 'Swing 911', icon: '🚑', desc: 'Emergency fix', locked: !isPro }
@@ -388,6 +407,33 @@ export default function SwingMasterAI({ isPro }) {
                         <div className="space-y-6">
                             {aiTool === 'trainer' && <button onClick={generateDataDrivenPlan} disabled={loadingAI} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2">{loadingAI ? "Analyzing Stats..." : "Generate Today's Plan"} {!loadingAI && <Sparkles size={18}/>}</button>}
                             
+                            {/* --- NEW CUSTOM PRACTICE SECTION --- */}
+                            {aiTool === 'custom' && (
+                                !isPro ? (
+                                    <div className="text-center py-10 px-6 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                                        <div className="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4"><Lock size={32}/></div>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Pro Access Only</h3>
+                                        <p className="text-slate-500 mb-6">Unlock custom practice plans for any part of your game.</p>
+                                        <button onClick={handleUpgradeToPro} className="bg-amber-400 hover:bg-amber-300 text-slate-900 px-8 py-3 rounded-full font-bold">Unlock for $49</button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2"><Target className="text-blue-500"/> Skill Builder</h2>
+                                        <p className="text-sm text-slate-500">What do you want to work on today?</p>
+                                        <input 
+                                            type="text" 
+                                            value={customPracticeInput}
+                                            onChange={(e) => setCustomPracticeInput(e.target.value)}
+                                            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" 
+                                            placeholder="e.g. Short Game, Bunker Shots, Lag Putting..." 
+                                        />
+                                        <button onClick={generateCustomPractice} disabled={loadingAI || !customPracticeInput} className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all transform active:scale-95 flex justify-center items-center gap-2">
+                                            {loadingAI ? "Building Plan..." : "Get Drills"} {!loadingAI && <Dumbbell size={18}/>}
+                                        </button>
+                                    </div>
+                                )
+                            )}
+
                             {aiTool === 'caddie' && <div className="space-y-4"><input type="number" placeholder="Distance to Pin" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg" onChange={e => setCaddieData({...caddieData, distance: e.target.value})} /><button onClick={generateCaddieAdvice} disabled={loadingAI} className="w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl font-bold text-lg">{loadingAI ? "Consulting..." : "Get Advice"}</button></div>}
                             
                             {aiTool === 'distances' && <div className="space-y-4"><div className="flex gap-3"><select className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold" onChange={e => setNewDistanceEntry({...newDistanceEntry, club: e.target.value})}><option>Select Club</option>{STANDARD_CLUBS.map(c => <option key={c}>{c}</option>)}</select><input type="number" placeholder="Yards" className="w-32 p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-lg" onChange={e => setNewDistanceEntry({...newDistanceEntry, carry: e.target.value})} /></div><button onClick={handleSaveDistance} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-700">Log Shot Data</button>{renderSummaryTable()}</div>}
