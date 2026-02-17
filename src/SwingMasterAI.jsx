@@ -72,7 +72,7 @@ export default function SwingMasterAI({ isPro }) {
   // --- PERSISTENCE ---
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('swingmaster_master_v7');
+      const saved = localStorage.getItem('swingmaster_master_v8');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.rounds) setRounds(parsed.rounds);
@@ -84,7 +84,7 @@ export default function SwingMasterAI({ isPro }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('swingmaster_master_v7', JSON.stringify({ rounds, profile: userProfile, leagues, shots: shotHistory }));
+    localStorage.setItem('swingmaster_master_v8', JSON.stringify({ rounds, profile: userProfile, leagues, shots: shotHistory }));
   }, [rounds, userProfile, leagues, shotHistory]);
 
   // --- AI VISION INIT ---
@@ -263,12 +263,11 @@ export default function SwingMasterAI({ isPro }) {
 
       <main className="p-4 max-w-lg mx-auto">
         
-        {/* STATS VIEW (NEW CHARTS + AVERAGES) */}
+        {/* STATS VIEW */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-fadeIn">
             <button onClick={startNewRound} className="w-full bg-green-600 text-white py-5 rounded-3xl font-bold shadow-xl flex justify-center items-center gap-2"><Plus/> Start New Round</button>
             
-            {/* METRICS */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border text-center">
                     <div className="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Avg Score</div>
@@ -280,7 +279,6 @@ export default function SwingMasterAI({ isPro }) {
                 </div>
             </div>
 
-            {/* CHART */}
             <div className="bg-white p-6 rounded-3xl border shadow-sm">
                 <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-sm uppercase tracking-widest">
                     <TrendingUp size={16} className="text-blue-500"/> Scoring Trends (Last 5)
@@ -303,7 +301,6 @@ export default function SwingMasterAI({ isPro }) {
                 )}
             </div>
 
-            {/* HISTORY */}
             {rounds.length > 0 && (
                 <div className="bg-white rounded-3xl border shadow-sm overflow-hidden">
                     <div className="p-4 bg-slate-50 font-bold text-xs text-slate-400 uppercase tracking-widest">Recent Rounds</div>
@@ -337,7 +334,7 @@ export default function SwingMasterAI({ isPro }) {
             </div>
         )}
 
-        {/* LIVE SCORECARD (RESTORED WITH FAIRWAY/GIR) */}
+        {/* LIVE SCORECARD */}
         {activeTab === 'live-scorecard' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex justify-between items-center bg-slate-900 text-white p-8 rounded-[40px]">
@@ -354,14 +351,12 @@ export default function SwingMasterAI({ isPro }) {
                     </div>
                 </div>
                 
-                {/* RESTORED PUTTS TOGGLE */}
                 <div className="flex justify-center gap-4">
                      <button onClick={()=>updateHole('putts', Math.max(0, liveData[currentHole-1].putts - 1))} className="p-4 border rounded-xl font-bold"> - Putt</button>
                      <div className="p-4 font-black text-xl">{liveData[currentHole-1].putts} Putts</div>
                      <button onClick={()=>updateHole('putts', liveData[currentHole-1].putts + 1)} className="p-4 border rounded-xl font-bold"> + Putt</button>
                 </div>
 
-                {/* RESTORED FAIRWAY & GIR */}
                 <div className="grid grid-cols-2 gap-4 pt-4">
                     <button onClick={()=>updateHole('fairway', liveData[currentHole-1].fairway==='hit'?'miss':'hit')} className={`p-5 rounded-3xl border-2 font-black text-xs uppercase transition-all ${liveData[currentHole-1].fairway==='hit'?'bg-green-50 border-green-500 text-green-700':'bg-slate-50 border-transparent text-slate-400'}`}>Fairway</button>
                     <button onClick={()=>updateHole('gir', !liveData[currentHole-1].gir)} className={`p-5 rounded-3xl border-2 font-black text-xs uppercase transition-all ${liveData[currentHole-1].gir?'bg-green-50 border-green-500 text-green-700':'bg-slate-50 border-transparent text-slate-400'}`}>Green (GIR)</button>
@@ -390,8 +385,34 @@ export default function SwingMasterAI({ isPro }) {
             </div>
             <div className="bg-white p-8 rounded-[40px] border shadow-sm min-h-[400px]">
                 {aiTool === 'trainer' && <button onClick={()=>callGemini(`Act as a PGA Coach. Create 45-min plan for HCP: ${userProfile.handicap}.`)} disabled={loadingAI} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold">{loadingAI ? "Thinking..." : "Generate Today's Plan"}</button>}
-                {aiTool === 'custom' && <div className="space-y-4"><input type="text" placeholder="e.g. Bunker shots" className="w-full p-5 bg-slate-50 border-none rounded-2xl font-bold" onChange={e=>setCustomPracticeInput(e.target.value)} /><button onClick={()=>callGemini(`Act as PGA Coach. Drills for: ${customPracticeInput}`)} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold">Get Drills</button></div>}
-                {aiTool === 'fix' && <div className="space-y-4"><textarea placeholder="e.g. Slicing Driver" className="w-full p-5 bg-red-50 border-none rounded-2xl font-bold min-h-[120px]" onChange={e=>setFixInput(e.target.value)} /><button onClick={()=>callGemini(`Act as PGA Pro. EMERGENCY 911 fix for: ${fixInput}`)} className="w-full bg-red-600 text-white py-5 rounded-2xl font-bold">Fix My Swing</button></div>}
+                
+                {aiTool === 'custom' && (
+                    <div className="space-y-4">
+                        <input type="text" placeholder="e.g. Bunker shots" className="w-full p-5 bg-slate-50 border-none rounded-2xl font-bold" onChange={e=>setCustomPracticeInput(e.target.value)} />
+                        <button 
+                            onClick={()=>callGemini(`Act as PGA Coach. Drills for: ${customPracticeInput}`)} 
+                            disabled={loadingAI}
+                            className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold"
+                        >
+                            {loadingAI ? "Loading Drills..." : "Get Drills"}
+                        </button>
+                    </div>
+                )}
+                
+                {/* UPDATED SWING 911 WITH LOADING STATE */}
+                {aiTool === 'fix' && (
+                    <div className="space-y-4">
+                        <textarea placeholder="e.g. Slicing Driver" className="w-full p-5 bg-red-50 border-none rounded-2xl font-bold min-h-[120px]" onChange={e=>setFixInput(e.target.value)} />
+                        <button 
+                            onClick={()=>callGemini(`Act as PGA Pro. EMERGENCY 911 fix for: ${fixInput}`)} 
+                            disabled={loadingAI}
+                            className="w-full bg-red-600 text-white py-5 rounded-2xl font-bold"
+                        >
+                            {loadingAI ? "Diagnosing..." : "Fix My Swing"}
+                        </button>
+                    </div>
+                )}
+
                 {aiTool === 'caddie' && <div className="space-y-3"><input type="number" placeholder="Distance (yards)" className="w-full p-3 border rounded-xl" onChange={e=>setCaddieData({...caddieData, distance: e.target.value})} /><button onClick={()=>callGemini(`Act as Tour Caddie. Shot: ${caddieData.distance}y.`)} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Advice</button></div>}
                 {aiTool === 'analyzer' && (!isPro ? <div className="text-center py-10"><Lock className="mx-auto mb-2 text-amber-500"/><button onClick={handleUpgradeToPro} className="bg-amber-400 text-slate-900 px-8 py-3 rounded-full font-bold">Upgrade for AI Vision</button></div> : <div className="relative bg-black rounded-3xl aspect-[3/4] overflow-hidden flex items-center justify-center">{!cameraActive ? <button onClick={startCamera} className="bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-2xl">Start Analysis</button> : <><video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover"/><canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none"/><div className="absolute top-4 left-4 bg-black/60 p-2 rounded-lg text-white font-bold text-xs">{aiFeedback}</div><button onClick={()=>{setCameraActive(false); stopCamera();}} className="absolute bottom-6 bg-red-600 text-white px-8 py-2 rounded-full font-bold">Stop</button></>}</div>)}
                 {aiResponse && <div className="mt-8 pt-8 border-t prose prose-slate"><ReactMarkdown remarkPlugins={[remarkGfm]}>{aiResponse}</ReactMarkdown></div>}
