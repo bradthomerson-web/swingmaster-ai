@@ -72,7 +72,7 @@ export default function SwingMasterAI({ isPro }) {
   // --- PERSISTENCE ---
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('swingmaster_master_v6');
+      const saved = localStorage.getItem('swingmaster_master_v7');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.rounds) setRounds(parsed.rounds);
@@ -84,7 +84,7 @@ export default function SwingMasterAI({ isPro }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('swingmaster_master_v6', JSON.stringify({ rounds, profile: userProfile, leagues, shots: shotHistory }));
+    localStorage.setItem('swingmaster_master_v7', JSON.stringify({ rounds, profile: userProfile, leagues, shots: shotHistory }));
   }, [rounds, userProfile, leagues, shotHistory]);
 
   // --- AI VISION INIT ---
@@ -134,7 +134,7 @@ export default function SwingMasterAI({ isPro }) {
     setStartCoords(null);
   };
 
-  // --- OTHER LOGIC FUNCTIONS ---
+  // --- ROUND LOGIC ---
   const startNewRound = () => {
     setLiveData(Array(18).fill().map((_, i) => ({ hole: i + 1, par: 4, strokes: 4, putts: 2, fairway: 'hit', gir: true })));
     setCurrentHole(1);
@@ -150,7 +150,18 @@ export default function SwingMasterAI({ isPro }) {
 
   const finishRound = () => {
     const totalStrokes = liveData.reduce((acc, h) => acc + h.strokes, 0);
-    const summary = { id: Date.now(), date: new Date().toLocaleDateString(), score: totalStrokes, putts: liveData.reduce((a,b)=>a+b.putts,0) };
+    const totalPutts = liveData.reduce((acc, h) => acc + h.putts, 0);
+    const totalGIR = liveData.filter(h => h.gir).length;
+    const totalFairways = liveData.filter(h => h.fairway === 'hit').length;
+
+    const summary = { 
+        id: Date.now(), 
+        date: new Date().toLocaleDateString(), 
+        score: totalStrokes, 
+        putts: totalPutts,
+        gir: totalGIR,
+        fairways: totalFairways
+    };
     setRounds([summary, ...rounds]);
     setIsLiveRound(false);
     setActiveTab('dashboard');
@@ -252,12 +263,12 @@ export default function SwingMasterAI({ isPro }) {
 
       <main className="p-4 max-w-lg mx-auto">
         
-        {/* STATS VIEW (UPDATED WITH DYNAMIC CHARTS) */}
+        {/* STATS VIEW (NEW CHARTS + AVERAGES) */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6 animate-fadeIn">
             <button onClick={startNewRound} className="w-full bg-green-600 text-white py-5 rounded-3xl font-bold shadow-xl flex justify-center items-center gap-2"><Plus/> Start New Round</button>
             
-            {/* AVG CARDS */}
+            {/* METRICS */}
             <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-6 rounded-3xl shadow-sm border text-center">
                     <div className="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Avg Score</div>
@@ -269,7 +280,7 @@ export default function SwingMasterAI({ isPro }) {
                 </div>
             </div>
 
-            {/* IMPROVEMENT CHART */}
+            {/* CHART */}
             <div className="bg-white p-6 rounded-3xl border shadow-sm">
                 <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-sm uppercase tracking-widest">
                     <TrendingUp size={16} className="text-blue-500"/> Scoring Trends (Last 5)
@@ -292,7 +303,7 @@ export default function SwingMasterAI({ isPro }) {
                 )}
             </div>
 
-            {/* RECENT HISTORY */}
+            {/* HISTORY */}
             {rounds.length > 0 && (
                 <div className="bg-white rounded-3xl border shadow-sm overflow-hidden">
                     <div className="p-4 bg-slate-50 font-bold text-xs text-slate-400 uppercase tracking-widest">Recent Rounds</div>
@@ -300,7 +311,7 @@ export default function SwingMasterAI({ isPro }) {
                         <div key={i} className="p-4 border-b last:border-0 flex justify-between items-center">
                             <div>
                                 <div className="text-sm font-bold text-slate-900">{r.date}</div>
-                                <div className="text-[10px] text-slate-400">{r.putts} Putts</div>
+                                <div className="text-[10px] text-slate-400">{r.putts} Putts • {r.fairways} Fairways</div>
                             </div>
                             <div className="text-xl font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">{r.score}</div>
                         </div>
@@ -317,31 +328,16 @@ export default function SwingMasterAI({ isPro }) {
                     <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex justify-center gap-2"><Locate size={16}/> GPS Rangefinder</h2>
                     <div className="text-8xl font-black text-slate-900 mb-2">{currentDistance}</div>
                     <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-8">YARDS</div>
-                    
                     <select value={selectedClub} onChange={(e)=>setSelectedClub(e.target.value)} className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-center mb-6 outline-none">
                         {STANDARD_CLUBS.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-
-                    {!gpsActive ? 
-                        <button onClick={startShot} className="w-full bg-slate-900 text-white py-5 rounded-3xl font-bold shadow-xl">Start Shot</button> :
-                        <button onClick={saveShot} className="w-full bg-green-600 text-white py-5 rounded-3xl font-bold animate-pulse">Save & Stop</button>
-                    }
+                    {!gpsActive ? <button onClick={startShot} className="w-full bg-slate-900 text-white py-5 rounded-3xl font-bold shadow-xl">Start Shot</button> : <button onClick={saveShot} className="w-full bg-green-600 text-white py-5 rounded-3xl font-bold animate-pulse">Save & Stop</button>}
                 </div>
-                {shotHistory.length > 0 && (
-                    <div className="bg-white rounded-3xl border text-left overflow-hidden">
-                        <div className="p-4 bg-slate-50 font-bold text-xs text-slate-400 uppercase tracking-widest">Shot History</div>
-                        {shotHistory.slice(0, 5).map((s, i) => (
-                            <div key={i} className="p-4 border-b last:border-0 flex justify-between">
-                                <span className="font-bold">{s.club}</span>
-                                <span className="font-black text-blue-600">{s.distance}y</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                {shotHistory.length > 0 && <div className="bg-white rounded-3xl border text-left overflow-hidden"><div className="p-4 bg-slate-50 font-bold text-xs text-slate-400 uppercase tracking-widest">Shot History</div>{shotHistory.slice(0, 5).map((s, i) => <div key={i} className="p-4 border-b last:border-0 flex justify-between"><span className="font-bold">{s.club}</span><span className="font-black text-blue-600">{s.distance}y</span></div>)}</div>}
             </div>
         )}
 
-        {/* LIVE SCORECARD */}
+        {/* LIVE SCORECARD (RESTORED WITH FAIRWAY/GIR) */}
         {activeTab === 'live-scorecard' && (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex justify-between items-center bg-slate-900 text-white p-8 rounded-[40px]">
@@ -357,11 +353,18 @@ export default function SwingMasterAI({ isPro }) {
                         <button onClick={()=>updateHole('strokes', liveData[currentHole-1].strokes + 1)} className="w-16 h-16 rounded-full border-2 text-3xl font-light">+</button>
                     </div>
                 </div>
+                
+                {/* RESTORED PUTTS TOGGLE */}
                 <div className="flex justify-center gap-4">
-                     {/* Simplified toggles for cleaner look */}
                      <button onClick={()=>updateHole('putts', Math.max(0, liveData[currentHole-1].putts - 1))} className="p-4 border rounded-xl font-bold"> - Putt</button>
                      <div className="p-4 font-black text-xl">{liveData[currentHole-1].putts} Putts</div>
                      <button onClick={()=>updateHole('putts', liveData[currentHole-1].putts + 1)} className="p-4 border rounded-xl font-bold"> + Putt</button>
+                </div>
+
+                {/* RESTORED FAIRWAY & GIR */}
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                    <button onClick={()=>updateHole('fairway', liveData[currentHole-1].fairway==='hit'?'miss':'hit')} className={`p-5 rounded-3xl border-2 font-black text-xs uppercase transition-all ${liveData[currentHole-1].fairway==='hit'?'bg-green-50 border-green-500 text-green-700':'bg-slate-50 border-transparent text-slate-400'}`}>Fairway</button>
+                    <button onClick={()=>updateHole('gir', !liveData[currentHole-1].gir)} className={`p-5 rounded-3xl border-2 font-black text-xs uppercase transition-all ${liveData[currentHole-1].gir?'bg-green-50 border-green-500 text-green-700':'bg-slate-50 border-transparent text-slate-400'}`}>Green (GIR)</button>
                 </div>
             </div>
             <div className="flex gap-4">
