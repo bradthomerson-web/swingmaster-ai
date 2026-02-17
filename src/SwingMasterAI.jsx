@@ -13,10 +13,9 @@ import { FilesetResolver, PoseLandmarker, DrawingUtils } from "@mediapipe/tasks-
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
-// 🛠️ LOCKED: Back to 2.5 Flash as requested
+// 🛠️ PERMANENT LOCK: Gemini 2.5 Flash
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-const STANDARD_CLUBS = ['Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', '5 Iron', '6 Iron', '7 Iron', '8 Iron', '9 Iron', 'Pitching Wedge', 'Gap Wedge', 'Sand Wedge', 'Lob Wedge'];
 const EQUIPMENT_OPTIONS = ['Driving Range', 'Golf Net', 'Hitting Mat', 'Simulator', 'Alignment Stick', 'Full Bag'];
 
 export default function SwingMasterAI({ isPro }) {
@@ -43,11 +42,11 @@ export default function SwingMasterAI({ isPro }) {
     { id: 2, name: 'PGA Fantasy', members: 850, pot: 'Global', rank: 142, score: '885 pts' }
   ]);
 
-  // --- AI STATE ---
+  // --- AI HUB STATE ---
   const [aiTool, setAiTool] = useState('trainer');
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiResponse, setAiResponse] = useState(null);
-  const [caddieData, setCaddieData] = useState({ distance: '', wind: 'calm', lie: 'fairway' });
+  const [caddieData, setCaddieData] = useState({ distance: '' });
   const [fixInput, setFixInput] = useState('');
   const [customPracticeInput, setCustomPracticeInput] = useState('');
 
@@ -56,7 +55,7 @@ export default function SwingMasterAI({ isPro }) {
   const canvasRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [poseLandmarker, setPoseLandmarker] = useState(null);
-  const [aiFeedback, setAiFeedback] = useState("Align yourself in frame...");
+  const [aiFeedback, setAiFeedback] = useState("Align yourself...");
   const requestRef = useRef(null);
   const baselineHeadX = useRef(null);
 
@@ -65,7 +64,7 @@ export default function SwingMasterAI({ isPro }) {
   // --- PERSISTENCE ---
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('swingmaster_full_data');
+      const saved = localStorage.getItem('swingmaster_master_v4');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.rounds) setRounds(parsed.rounds);
@@ -76,7 +75,7 @@ export default function SwingMasterAI({ isPro }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('swingmaster_full_data', JSON.stringify({ rounds, profile: userProfile, leagues }));
+    localStorage.setItem('swingmaster_master_v4', JSON.stringify({ rounds, profile: userProfile, leagues }));
   }, [rounds, userProfile, leagues]);
 
   // --- AI VISION INIT ---
@@ -89,12 +88,12 @@ export default function SwingMasterAI({ isPro }) {
           runningMode: "VIDEO", numPoses: 1
         });
         setPoseLandmarker(landmarker);
-      } catch (err) { console.error("AI Vision Init Failed", err); }
+      } catch (err) { console.error("AI Init Failed", err); }
     }
     initAI();
   }, []);
 
-  // --- LIVE ROUND LOGIC ---
+  // --- LOGIC FUNCTIONS ---
   const startNewRound = () => {
     setLiveData(Array(18).fill().map((_, i) => ({ hole: i + 1, par: 4, strokes: 4, putts: 2, fairway: 'hit', gir: true })));
     setCurrentHole(1);
@@ -116,7 +115,21 @@ export default function SwingMasterAI({ isPro }) {
     setActiveTab('dashboard');
   };
 
-  // --- AI LOGIC (LOCKED TO 2.5 FLASH) ---
+  const handleEquipmentChange = (item, isChecked) => {
+    let currentItems = userProfile.equipment ? userProfile.equipment.split(',').map(i => i.trim()).filter(i => i) : [];
+    if (isChecked) { if (!currentItems.includes(item)) currentItems.push(item); } 
+    else { currentItems = currentItems.filter(i => i !== item); }
+    setUserProfile({ ...userProfile, equipment: currentItems.join(', ') });
+  };
+
+  const handleCreateLeague = () => {
+    if (!newLeague.name) return;
+    const newEntry = { id: Date.now(), name: newLeague.name, pot: newLeague.pot || '$0', members: 1, rank: 1, score: 'E' };
+    setLeagues([...leagues, newEntry]);
+    setNewLeague({ name: '', pot: '', members: '1' });
+    setShowLeagueModal(false);
+  };
+
   const callGemini = async (prompt) => {
     setLoadingAI(true);
     setAiResponse(null);
@@ -128,26 +141,8 @@ export default function SwingMasterAI({ isPro }) {
       });
       const data = await response.json();
       setAiResponse(data.candidates[0].content.parts[0].text);
-    } catch (err) { setAiResponse("⚠️ Error connecting to Gemini 2.5."); }
+    } catch (err) { setAiResponse("⚠️ AI Error. Locked to 2.5 Flash."); }
     setLoadingAI(false);
-  };
-
-  const generateDataDrivenPlan = () => {
-    callGemini(`Act as a PGA Coach. Create a 45-min plan for someone with handicap ${userProfile.handicap}. Weakness: "${userProfile.weaknesses}". Include YouTube links.`);
-  };
-
-  const generateCaddieAdvice = () => {
-    callGemini(`Act as a Tour Caddie. Shot: ${caddieData.distance}y, Wind: ${caddieData.wind}, Lie: ${caddieData.lie}. Club/shot recommendation?`);
-  };
-
-  const generateQuickFix = () => {
-    if(!isPro) { setShowUpgradeModal(true); return; }
-    callGemini(`Act as a PGA Pro. EMERGENCY 911 FIX for: "${fixInput}". Give 1 cause, 2 setup fixes, 2 swing thoughts. Concise.`);
-  };
-
-  const generateCustomPractice = () => {
-    if(!isPro) { setShowUpgradeModal(true); return; }
-    callGemini(`Act as a PGA Coach. Custom focus on: "${customPracticeInput}". 3 drills with links.`);
   };
 
   // --- CAMERA ANALYSIS ---
@@ -161,6 +156,12 @@ export default function SwingMasterAI({ isPro }) {
         videoRef.current.onloadeddata = predictWebcam;
       }
     } catch (err) { setCameraActive(false); }
+  };
+
+  const stopCamera = () => {
+    setCameraActive(false);
+    if (videoRef.current?.srcObject) { videoRef.current.srcObject.getTracks().forEach(t => t.stop()); }
+    if (requestRef.current) cancelAnimationFrame(requestRef.current);
   };
 
   const predictWebcam = () => {
@@ -190,18 +191,19 @@ export default function SwingMasterAI({ isPro }) {
       <header className="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">SwingMaster <span className="text-green-500">Pro</span></h1>
-          <span className="text-[10px] font-black bg-amber-400 text-slate-900 px-2 py-1 rounded-full">{isPro ? 'PRO' : 'FREE'}</span>
+          <span className="text-[10px] font-black bg-amber-400 text-slate-900 px-2 py-1 rounded-full uppercase">{isPro ? 'PRO' : 'FREE'}</span>
         </div>
         <nav className="flex justify-around text-[10px] font-bold uppercase tracking-tighter text-slate-400">
-          <button onClick={() => setActiveTab('dashboard')} className={activeTab === 'dashboard' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Stats</button>
-          <button onClick={() => setActiveTab('leagues')} className={activeTab === 'leagues' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Leagues</button>
-          <button onClick={() => setActiveTab('live-scorecard')} className={activeTab.includes('live') ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Play</button>
-          <button onClick={() => setActiveTab('ai-hub')} className={activeTab === 'ai-hub' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Coach</button>
-          <button onClick={() => setActiveTab('profile')} className={activeTab === 'profile' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Profile</button>
+          <button onClick={() => {setActiveTab('dashboard'); setSelectedLeague(null);}} className={activeTab === 'dashboard' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Stats</button>
+          <button onClick={() => {setActiveTab('leagues'); setSelectedLeague(null);}} className={activeTab === 'leagues' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Leagues</button>
+          <button onClick={() => {setActiveTab('live-scorecard'); setSelectedLeague(null);}} className={activeTab === 'live-scorecard' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Play</button>
+          <button onClick={() => {setActiveTab('ai-hub'); setSelectedLeague(null);}} className={activeTab === 'ai-hub' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Coach</button>
+          <button onClick={() => {setActiveTab('profile'); setSelectedLeague(null);}} className={activeTab === 'profile' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Profile</button>
         </nav>
       </header>
 
       <main className="p-4 max-w-md mx-auto">
+        {/* STATS VIEW */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <button onClick={startNewRound} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg flex justify-center items-center gap-2"><Plus/> Start Round</button>
@@ -218,6 +220,7 @@ export default function SwingMasterAI({ isPro }) {
           </div>
         )}
 
+        {/* LIVE SCORECARD */}
         {activeTab === 'live-scorecard' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center bg-slate-900 text-white p-6 rounded-3xl">
@@ -245,63 +248,89 @@ export default function SwingMasterAI({ isPro }) {
           </div>
         )}
 
+        {/* AI HUB / COACH */}
         {activeTab === 'ai-hub' && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-                {[
-                    { id: 'trainer', label: 'Daily Trainer', icon: '🏋️' },
-                    { id: 'analyzer', label: 'Swing Studio', icon: '📹' },
-                    { id: 'custom', label: 'Skill Builder', icon: '🎯' },
-                    { id: 'caddie', label: 'Smart Caddie', icon: '⛳' },
-                    { id: 'fix', label: 'Swing 911', icon: '🚑' }
-                ].map(tool => (
+                {[{ id: 'trainer', label: 'Daily Trainer', icon: '🏋️' }, { id: 'analyzer', label: 'Swing Studio', icon: '📹' }, { id: 'custom', label: 'Skill Builder', icon: '🎯' }, { id: 'caddie', label: 'Smart Caddie', icon: '⛳' }, { id: 'fix', label: 'Swing 911', icon: '🚑' }].map(tool => (
                     <button key={tool.id} onClick={()=>{setAiTool(tool.id); setAiResponse(null); setCameraActive(false);}} className={`p-4 rounded-2xl border-2 text-left transition-all ${aiTool === tool.id ? 'border-green-500 bg-green-50' : 'bg-white border-slate-100'}`}>
                         <div className="text-2xl mb-1">{tool.icon}</div>
                         <div className="font-bold text-xs">{tool.label}</div>
                     </button>
                 ))}
             </div>
-
             <div className="bg-white p-6 rounded-3xl border shadow-sm min-h-[300px]">
-                {aiTool === 'trainer' && <button onClick={generateDataDrivenPlan} disabled={loadingAI} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold">{loadingAI ? "Consulting Coach..." : "Generate Today's Plan"}</button>}
-                
-                {aiTool === 'custom' && (
-                    <div className="space-y-4">
-                        <input type="text" placeholder="e.g. Bunker shots" className="w-full p-4 bg-slate-50 border rounded-2xl" onChange={e=>setCustomPracticeInput(e.target.value)} />
-                        <button onClick={generateCustomPractice} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold">Get Custom Drills</button>
-                    </div>
-                )}
-
-                {aiTool === 'analyzer' && (
-                    !isPro ? <div className="text-center py-10"><Lock className="mx-auto mb-2 text-amber-500"/><button onClick={handleUpgradeToPro} className="bg-amber-400 px-6 py-2 rounded-full font-bold">Unlock AI Vision</button></div> :
-                    <div className="relative bg-black rounded-2xl aspect-[3/4] overflow-hidden flex items-center justify-center">
-                        {!cameraActive ? <button onClick={startCamera} className="bg-blue-600 text-white px-8 py-3 rounded-full font-bold">Start AI Analysis</button> :
-                        <><video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover"/><canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none"/>
-                        <div className="absolute top-4 left-4 bg-black/60 p-2 rounded-lg text-white font-bold text-xs">{aiFeedback}</div>
-                        <button onClick={()=>{setCameraActive(false);}} className="absolute bottom-4 bg-red-600 text-white px-6 py-2 rounded-full font-bold">Stop</button></>}
-                    </div>
-                )}
-
-                {aiTool === 'caddie' && (
-                    <div className="space-y-3">
-                        <input type="number" placeholder="Distance (yards)" className="w-full p-3 border rounded-xl" onChange={e=>setCaddieData({...caddieData, distance: e.target.value})} />
-                        <button onClick={generateCaddieAdvice} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Get Recommendation</button>
-                    </div>
-                )}
-
-                {aiTool === 'fix' && (
-                    <div className="space-y-4">
-                        <textarea placeholder="e.g. Slicing the ball" className="w-full p-4 bg-red-50 border rounded-2xl" onChange={e=>setFixInput(e.target.value)} />
-                        <button onClick={generateQuickFix} className="w-full bg-red-600 text-white py-4 rounded-2xl font-bold">Emergency Fix</button>
-                    </div>
-                )}
-
+                {aiTool === 'trainer' && <button onClick={()=>callGemini(`Act as a PGA Coach. Create 45-min plan based on HCP: ${userProfile.handicap}. Weakness: ${userProfile.weaknesses}.`)} disabled={loadingAI} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold">{loadingAI ? "Thinking..." : "Generate Plan"}</button>}
+                {aiTool === 'custom' && <div className="space-y-4"><input type="text" placeholder="e.g. Bunker shots" className="w-full p-4 bg-slate-50 border rounded-2xl" onChange={e=>setCustomPracticeInput(e.target.value)} /><button onClick={()=>callGemini(`Act as PGA Coach. Focus on: ${customPracticeInput}`)} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold">Get Drills</button></div>}
+                {aiTool === 'fix' && <div className="space-y-4"><textarea placeholder="What's wrong?" className="w-full p-4 bg-red-50 border rounded-2xl" onChange={e=>setFixInput(e.target.value)} /><button onClick={()=>callGemini(`Act as PGA Pro. EMERGENCY 911 fix for: ${fixInput}`)} className="w-full bg-red-600 text-white py-4 rounded-2xl font-bold">Fix My Swing</button></div>}
+                {aiTool === 'caddie' && <div className="space-y-3"><input type="number" placeholder="Yards" className="w-full p-3 border rounded-xl" onChange={e=>setCaddieData({...caddieData, distance: e.target.value})} /><button onClick={()=>callGemini(`Act as Tour Caddie. Shot: ${caddieData.distance}y.`)} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Advice</button></div>}
+                {aiTool === 'analyzer' && (!isPro ? <div className="text-center py-10"><Lock className="mx-auto mb-2 text-amber-500"/><button onClick={handleUpgradeToPro} className="bg-amber-400 px-6 py-2 rounded-full font-bold">Unlock AI Vision</button></div> : <div className="relative bg-black rounded-2xl aspect-[3/4] overflow-hidden flex items-center justify-center">{!cameraActive ? <button onClick={startCamera} className="bg-blue-600 text-white px-8 py-3 rounded-full font-bold">Start AI Analysis</button> : <><video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover"/><canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none"/><div className="absolute top-4 left-4 bg-black/60 p-2 rounded-lg text-white font-bold text-xs">{aiFeedback}</div><button onClick={()=>{setCameraActive(false); stopCamera();}} className="absolute bottom-4 bg-red-600 text-white px-6 py-2 rounded-full font-bold">Stop</button></>}</div>)}
                 {aiResponse && <div className="mt-6 pt-6 border-t prose prose-sm"><ReactMarkdown remarkPlugins={[remarkGfm]}>{aiResponse}</ReactMarkdown></div>}
-                {loadingAI && <div className="mt-10 text-center animate-pulse font-bold text-slate-400 uppercase tracking-widest">Thinking...</div>}
             </div>
           </div>
         )}
+
+        {/* LEAGUES VIEW */}
+        {activeTab === 'leagues' && !selectedLeague && (
+            <div className="space-y-4">
+                <button onClick={()=>setShowLeagueModal(true)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold">Create New League</button>
+                {leagues.map(l => (
+                    <button key={l.id} onClick={()=>setSelectedLeague(l)} className="w-full bg-white p-5 rounded-2xl border flex justify-between items-center text-left">
+                        <div><div className="font-bold">{l.name}</div><div className="text-xs text-slate-400">{l.members} Members • {l.pot}</div></div>
+                        <ChevronRight size={18} className="text-slate-300"/>
+                    </button>
+                ))}
+            </div>
+        )}
+
+        {activeTab === 'leagues' && selectedLeague && (
+            <div className="space-y-4">
+                <button onClick={()=>setSelectedLeague(null)} className="flex items-center gap-1 text-xs font-bold text-slate-500"><ChevronLeft size={16}/> Back</button>
+                <div className="bg-white p-6 rounded-3xl border">
+                    <h2 className="text-2xl font-black">{selectedLeague.name}</h2>
+                    <p className="text-sm text-slate-500 mb-6">Pot: {selectedLeague.pot} • Rank: #{selectedLeague.rank}</p>
+                    <div className="space-y-2">
+                        <div className="flex justify-between p-3 bg-blue-50 rounded-xl font-bold text-sm"><span>You</span><span>{selectedLeague.score}</span></div>
+                        <div className="flex justify-between p-3 bg-slate-50 rounded-xl text-sm opacity-50"><span>Player 1</span><span>-4</span></div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* PROFILE VIEW */}
+        {activeTab === 'profile' && (
+          <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-6">
+            <h2 className="font-bold text-xl">Profile & Setup</h2>
+            <div><label className="text-[10px] font-black text-slate-400 uppercase">Handicap</label><input type="text" className="w-full p-3 border rounded-xl mt-1" value={userProfile.handicap} onChange={e=>setUserProfile({...userProfile, handicap: e.target.value})} /></div>
+            <div><label className="text-[10px] font-black text-slate-400 uppercase">My Miss / Focus</label><input type="text" className="w-full p-3 border rounded-xl mt-1" value={userProfile.weaknesses} onChange={e=>setUserProfile({...userProfile, weaknesses: e.target.value})} /></div>
+            <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">My Equipment</label>
+                <div className="grid grid-cols-2 gap-2">
+                    {EQUIPMENT_OPTIONS.map(item => (
+                        <label key={item} className={`flex items-center gap-2 p-3 rounded-lg border text-xs font-bold ${userProfile.equipment?.includes(item) ? 'bg-blue-50 border-blue-400' : 'bg-slate-50'}`}>
+                            <input type="checkbox" checked={userProfile.equipment?.includes(item) || false} onChange={(e) => handleEquipmentChange(item, e.target.checked)} className="accent-blue-600"/> {item}
+                        </label>
+                    ))}
+                </div>
+            </div>
+            <button onClick={() => setActiveTab('dashboard')} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold"><Save size={18} className="inline mr-2"/> Save Settings</button>
+          </div>
+        )}
       </main>
+
+      {/* LEAGUE MODAL */}
+      {showLeagueModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+            <div className="bg-white p-6 rounded-3xl w-full max-w-sm relative">
+                <button onClick={()=>setShowLeagueModal(false)} className="absolute top-4 right-4"><X/></button>
+                <h3 className="text-xl font-bold mb-4">New League</h3>
+                <input type="text" placeholder="League Name" className="w-full p-3 border rounded-xl mb-3" onChange={e=>setNewLeague({...newLeague, name:e.target.value})}/>
+                <input type="text" placeholder="Buy-in (e.g. $20)" className="w-full p-3 border rounded-xl mb-4" onChange={e=>setNewLeague({...newLeague, pot:e.target.value})}/>
+                <button onClick={handleCreateLeague} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Create</button>
+            </div>
+        </div>
+      )}
+
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} onUpgrade={handleUpgradeToPro} />
     </div>
   );
