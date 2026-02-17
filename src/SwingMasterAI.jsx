@@ -13,7 +13,7 @@ import { FilesetResolver, PoseLandmarker, DrawingUtils } from "@mediapipe/tasks-
 const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/14AbJ1dH699J2yIaQ24AU00"; 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY; 
 
-// 🛠️ PERMANENT FIX: Locked to Gemini 2.5 Flash
+// 🛠️ LOCKED: Back to 2.5 Flash as requested
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 const STANDARD_CLUBS = ['Driver', '3 Wood', '5 Wood', 'Hybrid', '3 Iron', '4 Iron', '5 Iron', '6 Iron', '7 Iron', '8 Iron', '9 Iron', 'Pitching Wedge', 'Gap Wedge', 'Sand Wedge', 'Lob Wedge'];
@@ -62,7 +62,7 @@ export default function SwingMasterAI({ isPro }) {
 
   const handleUpgradeToPro = () => window.location.href = STRIPE_CHECKOUT_URL;
 
-  // --- LOAD DATA ---
+  // --- PERSISTENCE ---
   useEffect(() => {
     try {
       const saved = localStorage.getItem('swingmaster_full_data');
@@ -79,7 +79,7 @@ export default function SwingMasterAI({ isPro }) {
     localStorage.setItem('swingmaster_full_data', JSON.stringify({ rounds, profile: userProfile, leagues }));
   }, [rounds, userProfile, leagues]);
 
-  // --- AI MODEL INIT ---
+  // --- AI VISION INIT ---
   useEffect(() => {
     async function initAI() {
       try {
@@ -89,12 +89,12 @@ export default function SwingMasterAI({ isPro }) {
           runningMode: "VIDEO", numPoses: 1
         });
         setPoseLandmarker(landmarker);
-      } catch (err) { console.error("AI Init Error", err); }
+      } catch (err) { console.error("AI Vision Init Failed", err); }
     }
     initAI();
   }, []);
 
-  // --- TRACKER LOGIC ---
+  // --- LIVE ROUND LOGIC ---
   const startNewRound = () => {
     setLiveData(Array(18).fill().map((_, i) => ({ hole: i + 1, par: 4, strokes: 4, putts: 2, fairway: 'hit', gir: true })));
     setCurrentHole(1);
@@ -116,7 +116,7 @@ export default function SwingMasterAI({ isPro }) {
     setActiveTab('dashboard');
   };
 
-  // --- AI CORE LOGIC ---
+  // --- AI LOGIC (LOCKED TO 2.5 FLASH) ---
   const callGemini = async (prompt) => {
     setLoadingAI(true);
     setAiResponse(null);
@@ -128,34 +128,26 @@ export default function SwingMasterAI({ isPro }) {
       });
       const data = await response.json();
       setAiResponse(data.candidates[0].content.parts[0].text);
-    } catch (err) { setAiResponse("⚠️ AI Error. Check API Key."); }
+    } catch (err) { setAiResponse("⚠️ Error connecting to Gemini 2.5."); }
     setLoadingAI(false);
   };
 
-  // 1. Daily Trainer
   const generateDataDrivenPlan = () => {
-    const prompt = `Act as a PGA Coach. Create a 45-min practice plan based on Score Avg: ${rounds[0]?.score || 'N/A'}. Weakness: "${userProfile.weaknesses}". Include YouTube search links for 3 drills.`;
-    callGemini(prompt);
+    callGemini(`Act as a PGA Coach. Create a 45-min plan for someone with handicap ${userProfile.handicap}. Weakness: "${userProfile.weaknesses}". Include YouTube links.`);
   };
 
-  // 2. Smart Caddie
   const generateCaddieAdvice = () => {
-    const prompt = `Act as a Tour Caddie. Shot: ${caddieData.distance}y, Wind: ${caddieData.wind}, Lie: ${caddieData.lie}. Recommend a club and shot type.`;
-    callGemini(prompt);
+    callGemini(`Act as a Tour Caddie. Shot: ${caddieData.distance}y, Wind: ${caddieData.wind}, Lie: ${caddieData.lie}. Club/shot recommendation?`);
   };
 
-  // 3. Swing 911
   const generateQuickFix = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
-    const prompt = `Act as a PGA Pro. Emergency Fix for: "${fixInput}". Give 1 cause and 2 quick setup fixes. No video links, just text.`;
-    callGemini(prompt);
+    callGemini(`Act as a PGA Pro. EMERGENCY 911 FIX for: "${fixInput}". Give 1 cause, 2 setup fixes, 2 swing thoughts. Concise.`);
   };
 
-  // 4. Skill Builder
   const generateCustomPractice = () => {
     if(!isPro) { setShowUpgradeModal(true); return; }
-    const prompt = `Act as a PGA Coach. Focus purely on: "${customPracticeInput}". Give 3 drills with YouTube search links.`;
-    callGemini(prompt);
+    callGemini(`Act as a PGA Coach. Custom focus on: "${customPracticeInput}". 3 drills with links.`);
   };
 
   // --- CAMERA ANALYSIS ---
@@ -198,7 +190,7 @@ export default function SwingMasterAI({ isPro }) {
       <header className="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-xl font-bold">SwingMaster <span className="text-green-500">Pro</span></h1>
-          <span className="text-[10px] font-black bg-amber-400 text-slate-900 px-2 py-1 rounded-full uppercase">{isPro ? 'PRO' : 'FREE'}</span>
+          <span className="text-[10px] font-black bg-amber-400 text-slate-900 px-2 py-1 rounded-full">{isPro ? 'PRO' : 'FREE'}</span>
         </div>
         <nav className="flex justify-around text-[10px] font-bold uppercase tracking-tighter text-slate-400">
           <button onClick={() => setActiveTab('dashboard')} className={activeTab === 'dashboard' ? 'text-white border-b-2 border-green-500 pb-1' : ''}>Stats</button>
@@ -210,7 +202,6 @@ export default function SwingMasterAI({ isPro }) {
       </header>
 
       <main className="p-4 max-w-md mx-auto">
-        {/* STATS VIEW */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <button onClick={startNewRound} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold shadow-lg flex justify-center items-center gap-2"><Plus/> Start Round</button>
@@ -227,12 +218,11 @@ export default function SwingMasterAI({ isPro }) {
           </div>
         )}
 
-        {/* LIVE SCORECARD */}
         {activeTab === 'live-scorecard' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center bg-slate-900 text-white p-6 rounded-3xl">
-                <div><div className="text-xs font-bold text-slate-500">HOLE</div><div className="text-4xl font-black">{currentHole}</div></div>
-                <div className="text-right"><div className="text-xs font-bold text-slate-500">SCORE</div><div className="text-4xl font-black text-green-400">{liveData.slice(0, currentHole).reduce((a,b)=>a+b.strokes,0)}</div></div>
+                <div><div className="text-xs font-bold text-slate-500 uppercase">Hole</div><div className="text-4xl font-black">{currentHole}</div></div>
+                <div className="text-right"><div className="text-xs font-bold text-slate-500 uppercase">Total</div><div className="text-4xl font-black text-green-400">{liveData.slice(0, currentHole).reduce((a,b)=>a+b.strokes,0)}</div></div>
             </div>
             <div className="bg-white p-8 rounded-3xl border shadow-sm space-y-8 text-center">
                 <div>
@@ -244,8 +234,8 @@ export default function SwingMasterAI({ isPro }) {
                     </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    <button onClick={()=>updateHole('fairway', liveData[currentHole-1].fairway==='hit'?'miss':'hit')} className={`p-4 rounded-2xl border font-bold ${liveData[currentHole-1].fairway==='hit'?'bg-green-50 border-green-500':'bg-slate-50'}`}>Fairway</button>
-                    <button onClick={()=>updateHole('gir', !liveData[currentHole-1].gir)} className={`p-4 rounded-2xl border font-bold ${liveData[currentHole-1].gir?'bg-green-50 border-green-500':'bg-slate-50'}`}>Green (GIR)</button>
+                    <button onClick={()=>updateHole('fairway', liveData[currentHole-1].fairway==='hit'?'miss':'hit')} className={`p-4 rounded-2xl border font-bold ${liveData[currentHole-1].fairway==='hit'?'bg-green-50 border-green-500 text-green-700':'bg-slate-50'}`}>Fairway</button>
+                    <button onClick={()=>updateHole('gir', !liveData[currentHole-1].gir)} className={`p-4 rounded-2xl border font-bold ${liveData[currentHole-1].gir?'bg-green-50 border-green-500 text-green-700':'bg-slate-50'}`}>Green (GIR)</button>
                 </div>
             </div>
             <div className="flex gap-4">
@@ -255,7 +245,6 @@ export default function SwingMasterAI({ isPro }) {
           </div>
         )}
 
-        {/* AI HUB / COACH */}
         {activeTab === 'ai-hub' && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -289,47 +278,30 @@ export default function SwingMasterAI({ isPro }) {
                         {!cameraActive ? <button onClick={startCamera} className="bg-blue-600 text-white px-8 py-3 rounded-full font-bold">Start AI Analysis</button> :
                         <><video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover"/><canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none"/>
                         <div className="absolute top-4 left-4 bg-black/60 p-2 rounded-lg text-white font-bold text-xs">{aiFeedback}</div>
-                        <button onClick={()=>{setCameraActive(false); stopCamera();}} className="absolute bottom-4 bg-red-600 text-white px-6 py-2 rounded-full font-bold">Stop</button></>}
+                        <button onClick={()=>{setCameraActive(false);}} className="absolute bottom-4 bg-red-600 text-white px-6 py-2 rounded-full font-bold">Stop</button></>}
                     </div>
                 )}
 
                 {aiTool === 'caddie' && (
                     <div className="space-y-3">
                         <input type="number" placeholder="Distance (yards)" className="w-full p-3 border rounded-xl" onChange={e=>setCaddieData({...caddieData, distance: e.target.value})} />
-                        <select className="w-full p-3 border rounded-xl" onChange={e=>setCaddieData({...caddieData, wind: e.target.value})}><option value="calm">Calm</option><option value="windy">Windy</option></select>
-                        <button onClick={generateCaddieAdvice} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Get Club Recommendation</button>
+                        <button onClick={generateCaddieAdvice} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Get Recommendation</button>
+                    </div>
+                )}
+
+                {aiTool === 'fix' && (
+                    <div className="space-y-4">
+                        <textarea placeholder="e.g. Slicing the ball" className="w-full p-4 bg-red-50 border rounded-2xl" onChange={e=>setFixInput(e.target.value)} />
+                        <button onClick={generateQuickFix} className="w-full bg-red-600 text-white py-4 rounded-2xl font-bold">Emergency Fix</button>
                     </div>
                 )}
 
                 {aiResponse && <div className="mt-6 pt-6 border-t prose prose-sm"><ReactMarkdown remarkPlugins={[remarkGfm]}>{aiResponse}</ReactMarkdown></div>}
+                {loadingAI && <div className="mt-10 text-center animate-pulse font-bold text-slate-400 uppercase tracking-widest">Thinking...</div>}
             </div>
           </div>
         )}
-
-        {/* LEAGUES VIEW */}
-        {activeTab === 'leagues' && (
-            <div className="space-y-4">
-                <button onClick={()=>setShowLeagueModal(true)} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold">Create New League</button>
-                {leagues.map(l => (
-                    <button key={l.id} onClick={()=>{setSelectedLeague(l); setActiveTab('league-detail');}} className="w-full bg-white p-5 rounded-2xl border flex justify-between items-center text-left">
-                        <div><div className="font-bold">{l.name}</div><div className="text-xs text-slate-400">{l.members} Members • {l.pot}</div></div>
-                        <ChevronRight size={18} className="text-slate-300"/>
-                    </button>
-                ))}
-            </div>
-        )}
-
-        {/* PROFILE VIEW */}
-        {activeTab === 'profile' && (
-            <div className="bg-white p-6 rounded-3xl border shadow-sm space-y-4">
-                <h2 className="font-bold text-lg">My Profile</h2>
-                <div><label className="text-[10px] font-bold text-slate-400 uppercase">Handicap</label><input type="text" className="w-full p-3 border rounded-xl" value={userProfile.handicap} onChange={e=>setUserProfile({...userProfile, handicap: e.target.value})} /></div>
-                <div><label className="text-[10px] font-bold text-slate-400 uppercase">My Miss / Weakness</label><input type="text" className="w-full p-3 border rounded-xl" value={userProfile.weaknesses} onChange={e=>setUserProfile({...userProfile, weaknesses: e.target.value})} /></div>
-                <button onClick={()=>setActiveTab('dashboard')} className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold">Save Profile</button>
-            </div>
-        )}
       </main>
-
       <UpgradeModal isOpen={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} onUpgrade={handleUpgradeToPro} />
     </div>
   );
