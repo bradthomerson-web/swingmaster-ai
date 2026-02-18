@@ -72,7 +72,7 @@ export default function SwingMasterAI({ isPro }) {
   // --- PERSISTENCE ---
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('swingmaster_master_v8');
+      const saved = localStorage.getItem('swingmaster_master_v9');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.rounds) setRounds(parsed.rounds);
@@ -84,7 +84,7 @@ export default function SwingMasterAI({ isPro }) {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('swingmaster_master_v8', JSON.stringify({ rounds, profile: userProfile, leagues, shots: shotHistory }));
+    localStorage.setItem('swingmaster_master_v9', JSON.stringify({ rounds, profile: userProfile, leagues, shots: shotHistory }));
   }, [rounds, userProfile, leagues, shotHistory]);
 
   // --- AI VISION INIT ---
@@ -384,13 +384,24 @@ export default function SwingMasterAI({ isPro }) {
                 ))}
             </div>
             <div className="bg-white p-8 rounded-[40px] border shadow-sm min-h-[400px]">
-                {aiTool === 'trainer' && <button onClick={()=>callGemini(`Act as a PGA Coach. Create 45-min plan for HCP: ${userProfile.handicap}.`)} disabled={loadingAI} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold">{loadingAI ? "Thinking..." : "Generate Today's Plan"}</button>}
                 
+                {/* DAILY TRAINER */}
+                {aiTool === 'trainer' && (
+                    <button 
+                        onClick={()=>callGemini(`Act as a PGA Coach. Create 45-min plan for HCP: ${userProfile.handicap}. Weakness: "${userProfile.weaknesses}". Include YouTube search links for 3 specific drills.`)} 
+                        disabled={loadingAI} 
+                        className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold"
+                    >
+                        {loadingAI ? "Thinking..." : "Generate Today's Plan"}
+                    </button>
+                )}
+                
+                {/* SKILL BUILDER */}
                 {aiTool === 'custom' && (
                     <div className="space-y-4">
                         <input type="text" placeholder="e.g. Bunker shots" className="w-full p-5 bg-slate-50 border-none rounded-2xl font-bold" onChange={e=>setCustomPracticeInput(e.target.value)} />
                         <button 
-                            onClick={()=>callGemini(`Act as PGA Coach. Drills for: ${customPracticeInput}`)} 
+                            onClick={()=>callGemini(`Act as PGA Coach. Provide 3 specific drills for: "${customPracticeInput}". Include YouTube search links for each drill.`)} 
                             disabled={loadingAI}
                             className="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold"
                         >
@@ -399,12 +410,12 @@ export default function SwingMasterAI({ isPro }) {
                     </div>
                 )}
                 
-                {/* UPDATED SWING 911 WITH LOADING STATE */}
+                {/* SWING 911 */}
                 {aiTool === 'fix' && (
                     <div className="space-y-4">
                         <textarea placeholder="e.g. Slicing Driver" className="w-full p-5 bg-red-50 border-none rounded-2xl font-bold min-h-[120px]" onChange={e=>setFixInput(e.target.value)} />
                         <button 
-                            onClick={()=>callGemini(`Act as PGA Pro. EMERGENCY 911 fix for: ${fixInput}`)} 
+                            onClick={()=>callGemini(`Act as PGA Pro. EMERGENCY 911 fix for: "${fixInput}". Provide 1 cause, 2 setup fixes, and 1 drill with a YouTube search link.`)} 
                             disabled={loadingAI}
                             className="w-full bg-red-600 text-white py-5 rounded-2xl font-bold"
                         >
@@ -414,7 +425,9 @@ export default function SwingMasterAI({ isPro }) {
                 )}
 
                 {aiTool === 'caddie' && <div className="space-y-3"><input type="number" placeholder="Distance (yards)" className="w-full p-3 border rounded-xl" onChange={e=>setCaddieData({...caddieData, distance: e.target.value})} /><button onClick={()=>callGemini(`Act as Tour Caddie. Shot: ${caddieData.distance}y.`)} className="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Advice</button></div>}
+                
                 {aiTool === 'analyzer' && (!isPro ? <div className="text-center py-10"><Lock className="mx-auto mb-2 text-amber-500"/><button onClick={handleUpgradeToPro} className="bg-amber-400 text-slate-900 px-8 py-3 rounded-full font-bold">Upgrade for AI Vision</button></div> : <div className="relative bg-black rounded-3xl aspect-[3/4] overflow-hidden flex items-center justify-center">{!cameraActive ? <button onClick={startCamera} className="bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-2xl">Start Analysis</button> : <><video ref={videoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover"/><canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none"/><div className="absolute top-4 left-4 bg-black/60 p-2 rounded-lg text-white font-bold text-xs">{aiFeedback}</div><button onClick={()=>{setCameraActive(false); stopCamera();}} className="absolute bottom-6 bg-red-600 text-white px-8 py-2 rounded-full font-bold">Stop</button></>}</div>)}
+                
                 {aiResponse && <div className="mt-8 pt-8 border-t prose prose-slate"><ReactMarkdown remarkPlugins={[remarkGfm]}>{aiResponse}</ReactMarkdown></div>}
             </div>
           </div>
